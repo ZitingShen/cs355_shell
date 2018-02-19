@@ -1,3 +1,13 @@
+/* Jobs states: FG (foreground), BG (background), ST (stopped), DN (done),
+ *              TN (terminated)
+ * Job state transitions and enabling actions:
+ *    FG        -> ST       : ctrl-z
+ *    ST        -> FG       : fg command
+ *    ST        -> BG       : bg command
+ *    BG        -> FG       : fg command
+ *    BG        -> DN       : background process exit
+ *    BG/FG/ST  -> TN       : ctrl-c/kill
+ */
 enum job_status {BG, FG, ST, DN, TN};
 
 struct job_t {
