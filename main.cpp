@@ -1,13 +1,13 @@
 #include "joblist.h"
 #include "parse.h"
-#include <stdio>
+#include <iostream>
 
 using namespace std;
 
 int main(int argc, char **argv) {
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
-  struct joblist job_list;
+  struct joblist_t joblist;
   string cmdline;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
@@ -42,9 +42,9 @@ int main(int argc, char **argv) {
 
       // when parsing segments, separate <, >, >> from strings 
       // before and after
-      vector<vector<string>> parsed_segments = parse_segment(&segments);
+      vector<vector<string>> parsed_segments = parse_segments(&segments);
       
-      evaluate(&command, &parsed_segments, job_list);
+      evaluate(&command, &parsed_segments, &joblist);
     }
   }
 }
