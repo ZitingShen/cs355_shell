@@ -34,7 +34,9 @@ int main(int argc, char **argv) {
     
     // (add cmdline to history)
 
-    // check semicolons; no consecutive semicolons are allowed
+    // check semicolons
+    // no consecutive semicolons are allowed
+    // semicolon cannot be directly preceded by ampersent
     vector<string> commands = separate_by_semicolon(&cmdline);
 
     for(string command: commands) {
