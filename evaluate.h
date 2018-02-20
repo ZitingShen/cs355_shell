@@ -23,7 +23,7 @@ bg() takes in pointer to a list of pids/gpids (as integers).
 For each pid in the list, check whether it is valid pid of a suspended job in joblist (error if not). Then resume
 the process by sending SIGCONT. Update job status in joblist accordingly.
 */
-void bg(vector<int> *pid_list, struct joblist_t *joblist);
+void bg(vector<int> *pid_list);
 
 /*
 fg() takes in a integer as pid/gpid of job
@@ -31,16 +31,16 @@ Check process status in joblist (if not valid, error), if suspended/stopped, sen
 Then bring this process to foreground by tcsetpgrp().
 Then update status in joblist
 */
-void fg(pid_t pid, struct joblist_t *joblist);
+void fg(pid_t pid);
 
 /*
 First check whether pid is valid from joblist.
 If flag_set true, send SIGKILL to pid.
 else(flag_set false), send SIGTERM to pid.
 */
-void kill(pid_t pid, bool flag_set, struct joblist_t *joblist);
+void kill(pid_t pid, bool flag_set);
 
 /*
 stdout all current jobs by checking joblist. Will go over the entire list within this function.
 */
-void jobs(struct joblist_t *joblist);
+void jobs();

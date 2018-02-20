@@ -4,10 +4,11 @@
 
 using namespace std;
 
+struct joblist_t joblist;
+
 int main(int argc, char **argv) {
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
-  struct joblist_t joblist;
   string cmdline;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
