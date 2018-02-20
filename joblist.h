@@ -1,3 +1,6 @@
+#include <termios.h>
+#include <unistd.h>
+
 /* Jobs states: FG (foreground), BG (background), ST (stopped), DN (done),
  *              TN (terminated)
  * Job state transitions and enabling actions:
@@ -15,6 +18,7 @@ struct job_t {
 	pid_t pid;
 	job_status status;
 	string cmdline;
+	struct termios ter;
 
 	job(int jid, pid_t pid, job_status status, string *cmdline); /* constructor */
 };
