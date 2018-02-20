@@ -2,12 +2,12 @@
 evaluate() takes in command tokens separated by "|", and each token have had ">", "<", ">>" separated from
 file names
 Step 1: Initialize some intermediate variable to store input and output for piping
-Step 2: Create a new child process, N, and create a new process group with N. Depending on whether
-		the command is bg or fg(check last token), update joblist with this new process group.
+Step 2: Create a new child process, H, set the signal handling to default, and create a new process group with N. Depending on whether
+		the command is bg or fg(check last character and last token), update joblist with this new process group.
 Step 3: if this is child process:
 			Loop(for each token separated by "|")
 			(1) update intermediate input output variables
-			(2) fork a grandchild, G
+			(2) fork a grandchild, G, set the signal handling into default.
 				(a)if command is any of: "fg", "bg", "kill", "jobs", "history"(maybe). Preprocess arguments and let 
 					grandchild to execute command by calling fg(), bg(), kill(), jobs(), etc.
 				(b)if command does not belong to any of that in (a), let grandchild execute the command 
