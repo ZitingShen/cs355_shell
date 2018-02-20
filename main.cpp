@@ -34,9 +34,9 @@ int main(int argc, char **argv) {
     
     // (add cmdline to history)
 
-    // check semicolons
+    // check semicolons, separate cmdline by semicolons
     // no consecutive semicolons are allowed
-    // semicolon cannot be directly preceded by ampersent
+    // semicolon cannot be directly preceded by ampersend
     vector<string> commands = separate_by_semicolon(&cmdline);
 
     for(string command: commands) {
@@ -46,6 +46,7 @@ int main(int argc, char **argv) {
       // before and after
       vector<vector<string>> parsed_segments = parse_segments(&segments);
       
+      // hand processed segments to evaluate
       evaluate(&command, &parsed_segments, &joblist);
     }
   }
