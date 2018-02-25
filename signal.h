@@ -1,4 +1,5 @@
 #include <csignal>
+#include <sys/stat.h>
 
 /* SIGCHLD_handler 
 	Update job status with si_status.
