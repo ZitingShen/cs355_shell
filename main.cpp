@@ -1,5 +1,6 @@
 #include "joblist.h"
 #include "parse.h"
+#include "signal.h"
 #include <iostream>
 
 using namespace std;
@@ -14,11 +15,16 @@ int main(int argc, char **argv) {
 
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
-  string cmdline;
+  char *cmdline;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
 
   // mask SIGSTOP for the main process
+
+  // configure readline to auto-complete paths when the tab key is hit
+  rl_bind_key('\t', rl_complete);
+
+  using_history();
 
   while(cont) {
     joblist.delete_terminated_jobs();
@@ -29,31 +35,45 @@ int main(int argc, char **argv) {
       continue;
     }
     
-    getline(cin, cmdline);
+    cmdline = readline("shell> ");
     
-    if (cmdline == "exit") {
+    if (strcmp(cmdline, "exit") == 0) {
       cont = false;
       continue;
     }
 
-    // (history command to expand the command line)
-    
-    // (add cmdline to history)
+    // check for history expansion
+    char *output;
+    int expansion_result = history_expand(cmdline, &output);
 
-    // check semicolons, separate cmdline by semicolons
-    // no consecutive semicolons are allowed
-    // semicolon cannot be directly preceded by ampersend
-    vector<string> commands = separate_by_semicolon(&cmdline);
+    // If history expansion exists, overwrite cmdline.
+    if (expansion_result > 0) {
+      strcpy(cmdline, output);
+    }
+    free(output);
 
-    for(string command: commands) {
-      vector<string> segments = separate_by_vertical_bar(&command);
+    // If history expansion doesn't exist, print error message.
+    if (expansion_result < 0) {
+      cerr << cmdline << ": event not found" << endl;
+      continue;
+    } else if (strcmp(cmdline, "") != 0) {
+      add_history(cmdline);
 
-      // when parsing segments, separate <, >, >> from strings 
-      // before and after
-      vector<vector<string>> parsed_segments = parse_segments(&segments);
-      
-      // hand processed segments to evaluate
-      evaluate(&command, &parsed_segments, &joblist);
+      // check semicolons, separate cmdline by semicolons
+      // no consecutive semicolons are allowed
+      // semicolon cannot be directly preceded by ampersend
+      vector<string> commands = separate_by_semicolon(&cmdline);
+
+      for(string command: commands) {
+        vector<string> segments = separate_by_vertical_bar(&command);
+
+        // when parsing segments, separate <, >, >> from strings 
+        // before and after
+        vector<vector<string>> parsed_segments = parse_segments(&segments);
+        
+        // hand processed segments to evaluate
+        evaluate(&command, &parsed_segments, &joblist);
+      }
     }
   }
 }
