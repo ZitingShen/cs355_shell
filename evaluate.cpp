@@ -26,6 +26,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *
 			}
 			if (pid == ZERO){ //in child process
 				if (bg){
+					
 				}
 				else{ //if fg, need to swap termio :(
 
