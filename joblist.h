@@ -1,5 +1,10 @@
+#ifndef JOBLIST_H_
+#define JOBLIST_H_
+
 #include <termios.h>
 #include <unistd.h>
+#include <list>
+#include <string>
 
 using namespace std;
 
@@ -43,3 +48,5 @@ struct joblist_t {
 	int pid2jid(pid_t pid);
 	void listjobs();
 };
+
+#endif
