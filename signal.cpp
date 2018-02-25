@@ -5,7 +5,7 @@ using namespace std;
 
 extern struct joblist_t joblist;
 
-void SIGCHLD_handler(int sig, siginfo_t *sip, void *notused){
+void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	int exit_status = sip -> si_status;
 	pid_t pid = sip -> si_pid;
 	if (WIFEXITED(exit_status)){
@@ -26,7 +26,7 @@ void SIGCHLD_handler(int sig, siginfo_t *sip, void *notused){
 	}
 }
 
-void SIGINT_handler(int sig, siginfo_t *sip, void *notused){
+void sigint_handler(int sig, siginfo_t *sip, void *notused){
 	cout << "\n" << endl;
 	//print prompt?
 	rl_forced_update_display();
