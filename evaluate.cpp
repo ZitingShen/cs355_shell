@@ -19,20 +19,31 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *
 		if (last_seg -> end() == "&"){ //check whether background or foreground
 			bg = TRUE;
 		}
-		if ((pid = fork()) < ZERO ){
-			cerr << "Failed to fork child process!" << endl;
-		}
-		if (pid == ZERO){ //in child process
-
-		}
-		else{ //parent process
-			if (bg){
-				waitpid(pid, &status, WNOHANG | WUNTRACED);
+		/*fork a child to execute if not built-in*/
+		if (){//not builtin){}
+			if ((pid = fork()) < ZERO ){
+				cerr << "Failed to fork child process!" << endl;
 			}
-			else{ //waiting for fg child to complete, need to swap termio, also need to store termio
-				//of child if child is stopeed
-				waitpid(pid, &status, WUNTRACED);
-				if (WIF)
+			if (pid == ZERO){ //in child process
+				if (bg){
+				}
+				else{ //if fg, need to swap termio :(
+
+				}
+			}
+			else{ //parent process
+				if (bg){
+					waitpid(pid, &status, WNOHANG | WUNTRACED);
+				}
+				else{ //waiting for fg child to complete, need to swap termio, also need to store termio
+					//of child if child is stopeed
+					waitpid(pid, &status, WUNTRACED);
+					tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
+					if (WIFSTOPPED(status)){ //store child termio if stopped
+						tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
+					}
+					tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+				}
 			}
 		}
 	}
