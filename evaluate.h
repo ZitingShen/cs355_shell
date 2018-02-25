@@ -28,6 +28,7 @@ void bg(vector<int> *pid_list);
 /*
 fg() takes in a integer as pid/gpid of job
 Check process status in joblist (if not valid, error), if suspended/stopped, send SIGCONT.
+Save shell process status with termio, update status.
 Then bring this process to foreground by tcsetpgrp().
 Then update status in joblist
 */
@@ -35,8 +36,9 @@ void fg(pid_t pid);
 
 /*
 First check whether pid is valid from joblist.
-If flag_set true, send SIGKILL to pid.
-else(flag_set false), send SIGTERM to pid.
+If flag_set true, send SIGKILL to pid (if child is fg, need to bring shell back to foreground).
+else(flag_set false), send SIGTERM to pid (if child is fg, need to bring shell back to foreground).
+
 */
 void kill(pid_t pid, bool flag_set);
 

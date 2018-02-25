@@ -1,26 +1,43 @@
 #include<signal.h>
 #include<sys/wait.h>
 
-/* SIGCHLD_handler will check the calling process pid from sip, depending on who the calling
-process is.
-	(1) if it is foreground, ignore it(do nothing)
-	(2) if it is bg, double check with waitpid(), then WIFXXXX to find out the exit
-	    status and update the job status in joblist accordingly.*/
+/* SIGCHLD_handler 
+	Update job status with si_status.
+	*/
 void SIGCHLD_handler(int sig, siginfo_t *sip, void *notused); 
 
-/* SIGINT_handler will check the calling process pid from sip, depending on who the calling
-process is.
-	(1) if there is a foregrounded process, it will exit the foreground process in the joblist, 
-	    update the status of the job in the joblist.
-	(2) if there is no foregrounded process, it will do nothing.
- 	After (1) or (2), change the global flag, so thhat shell could continue to the next main loop.*/
+/* SIGINT_handler 
+	rl_forced_update_display(); to print new prompt
+	*/
 void SIGINT_handler(int sig, siginfo_t *sip, void *notused);
 
-/* SIGSTP_handler will check the calling process pid from sip, depending on who the calling
-process is.
-	(1) if there is a foregrounded process, it will find the foreground process in joblist, 
-	    and suspend it by sending SIGSTOP, then update the status of the job in the joblist.
-	(2) if there is no foregrounded process, it will do nothing.*/
-void SIGSTP_handler(int sig, siginfo_t *sip, void *notused);
 
+
+void SIGCHLD_handler(int sig, siginfo_t *sip, void *notused){
+	int exit_status = sip -> si_status;
+	pid_t pid = sip -> si_pid;
+	if (WIFEXITED(exit_status)){
+		if (joblist.find_pid(pid) -> status == BG){
+			joblist.find_pid(pid) -> status == DN;
+		}
+		else{
+			//joblit.find_pid(pid) -> status == ;???
+		}
+	}
+	else if (WIFSIGNALED(exit_status)){
+		joblist.find_pid(pid) -> status == TN;
+	}
+	else if (WIFSTOPPED(exit_status)){
+		joblist.find_pid(pid) -> status == ST;
+		cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status
+			) << endl;
+	}
+}
+
+void SIGINT_handler(int sig, siginfo *sip, void *notused){
+	cout << "\n" << endl;
+	//print prompt?
+	rl_forced_update_display();
+	//register again??
+}
 

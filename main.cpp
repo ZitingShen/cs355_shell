@@ -7,6 +7,11 @@ using namespace std;
 struct joblist_t joblist;
 
 int main(int argc, char **argv) {
+  //register signals
+  sigprocmask(SIGSTOP); // mask 
+  sigaction(SIGCHLD, SIGCHLD_handler, NULL);
+  sigaction(SIGINT, SIGINT_handler, NULL);
+
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
   string cmdline;
@@ -23,7 +28,7 @@ int main(int argc, char **argv) {
       cont = false;
       continue;
     }
-
+    
     getline(cin, cmdline);
     
     if (cmdline == "exit") {

@@ -11,7 +11,8 @@
  *    BG        -> DN       : background process exit
  *    BG/FG/ST  -> TN       : ctrl-c/kill
  */
-enum job_status {BG, FG, ST, DN, TN};
+
+enum job_status {BG, FG, ST, DN, TN}; //foreground done???!!!
 
 struct job_t {
 	int jid; //job id
@@ -35,7 +36,7 @@ struct joblist_t {
 	list<job_t>::iterator remove_terminated_helper(list<job_t>::iterator it);
 	bool fg_pid();
 	struct job_t *find_jid(pid_t pid);
-	struct job_t *find_pid(pid_t pid);
+	struct job_t *find_pid(pid_t pid);//need to find within the list of group processes
 	pid_t jid2pid(int jid);
 	int pid2jid(pid_t pid);
 	void listjobs();
