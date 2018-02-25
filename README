@@ -1,1 +1,11 @@
 README
+
+Not-supported functionality:
+1. consecutive ;s
+2. consecutive |s
+3. multiple redirection
+4. parentheses in cmdline
+
+Extra features:
+1. tab completion
+2. history
