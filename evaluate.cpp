@@ -59,12 +59,15 @@ void fg(pid_t pid){
 	//check whether pid is valid?
 	tcsetpgrp (shell_terminal, pid); //bring job to fg
 	pid_t g_pid = getpgid(pid); //get group id
-	if (joblist.find_pid(pid) -> status == ST){
+	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); //reset termio if job stopped
 		if (kill (- g_pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << "failed to continue when trying to be in foreground!" << endl;
 		}
+	}
+	else{
+		cerr << "Process " << pid << "can not be brought to foreground since it is neither ST nor BG!" << endl;
 	}
 }
 
