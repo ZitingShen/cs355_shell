@@ -15,8 +15,11 @@ Step 3: if this is child process:
 			(4) wait the grandchild G terminate to continue to the next iteration.
 		else: (if parent process)
 			wait or donot wait depends on bg/fg
+
+1. if there is no piping, do not fork a process to execute built-in functionality.
+2. if there is piping, fork a process to execute each built-in functionality.
 */
-void evaluate (vector<string> *command, vector<vector<string>> *parsed_segments, struct joblist_t *joblist);
+void evaluate (vector<string> *command, vector<vector<string>> *parsed_segments, struct joblist_t *joblist, bool *cont);
 
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 

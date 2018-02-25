@@ -8,18 +8,38 @@ using namespace std;
 struct joblist_t joblist;
 
 int main(int argc, char **argv) {
-  //register signals
-  sigprocmask(SIGSTOP); // mask 
-  sigaction(SIGCHLD, SIGCHLD_handler, NULL);
-  sigaction(SIGINT, SIGINT_handler, NULL);
-
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
   char *cmdline;
+  pid_t shell_pgid;
+  struct termios shell_tmodes;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
+  sa_sigchld.sa_sigaction = &sigchld_handler;
+  sigemptyset(&sa_sigchld.sa_mask);
+  sa_sigchld.sa_flags = SA_SIGINFO;
+  if (sigaction(SIGCHLD, &sa_sigchld, 0) == -1) {
+    cerror << "Failed to register SIGCHLD" << endl;
+    exit(1);
+  }
 
-  // mask SIGSTOP for the main process
+  sa_sigint.sa_sigaction = &sigchld_handler;
+  sigemptyset(&sa_sigint.sa_mask);
+  sa_sigint.sa_flags = SA_SIGINFO;
+  if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
+    cerror << "Failed to register SIGINT" << endl;
+    exit(1);
+  }  
+
+  // mask SIGSTOP and other signals for the main process
+  sigset_t masked_signals;
+  sigemptyset(&masked_signals);
+  sigaddset(&masked_signals, SIGSTP);
+  sigaddset(&masked_signals, SIGTERM);
+  sigaddset(&masked_signals, SIGTTIN);
+  sigaddset(&masked_signals, SIGTTOU);
+  sigaddset(&masked_signals, SIGQUIT);
+  sigprocmask(SIG_BLOCK, &masked_signals ,NULL);
 
   // configure readline to auto-complete paths when the tab key is hit
   rl_bind_key('\t', rl_complete);
@@ -28,17 +48,12 @@ int main(int argc, char **argv) {
 
   while(cont) {
     joblist.delete_terminated_jobs();
-    cout << "Thou shell not crash >"
-
-    if(cin.eof()) {
-      cont = false;
-      continue;
-    }
     
-    cmdline = readline("shell> ");
+    cmdline = readline("Thou shell not crash> ");
     
-    if (strcmp(cmdline, "exit") == 0) {
-      cont = false;
+    if (cmdline == NULL) { /* End of file (ctrl-d) */
+      cout << endl;
+      cont = 0;
       continue;
     }
 
@@ -72,7 +87,7 @@ int main(int argc, char **argv) {
         vector<vector<string>> parsed_segments = parse_segments(&segments);
         
         // hand processed segments to evaluate
-        evaluate(&command, &parsed_segments, &joblist);
+        evaluate(&command, &parsed_segments, &joblist, &cont);
       }
     }
   }
