@@ -1,12 +1,41 @@
 #include "evaluate.h"
 #define shell_terminal STDIN_FILENO
+#define ZERO 0
 
 extern struct joblist_t joblist;
 extern pid_t shell_pgid;
 extern struct termios shell_tmodes;
 
+using namespace std;
 
 void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
+	string inter_result;
+	int len = parsed_segments -> size();
+	bool bg = FALSE; //whether background
+	pid_t pid;
+	int status;
+	vector<string> last_seg = parsed_segments -> end();
+	if (len == 1){//no pipe
+		if (last_seg -> end() == "&"){ //check whether background or foreground
+			bg = TRUE;
+		}
+		if ((pid = fork()) < ZERO ){
+			cerr << "Failed to fork child process!" << endl;
+		}
+		if (pid == ZERO){ //in child process
+
+		}
+		else{ //parent process
+			if (bg){
+				waitpid(pid, &status, WNOHANG | WUNTRACED);
+			}
+			else{ //waiting for fg child to complete, need to swap termio, also need to store termio
+				//of child if child is stopeed
+				waitpid(pid, &status, WUNTRACED);
+				if (WIF)
+			}
+		}
+	}
 	return;
 }
 
@@ -51,12 +80,10 @@ void kill(pid_t pid, bool flag_set){
 	}
 	if (joblist.find_pid(pid) -> status == FG){ //if kill fg need to bring shell to fg
 		g_pid = getpgid(pid);
-		tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter);
 		if (kill (- g_pid, sig) < 0){
 			cerr << "Job " << joblist.pid2jid(pid) << "failed to be killed!" << endl;
 		}
 		tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
-		tcgetattr (shell_terminal, & joblist.find_pid(pid) -> ter); //store child termio
 		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); //restore shell termio
 	}
 }
