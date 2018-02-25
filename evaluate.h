@@ -1,3 +1,8 @@
+
+#include <vector>
+#include <string>
+
+using namespace std;
 /*
 evaluate() takes in command tokens separated by "|", and each token have had ">", "<", ">>" separated from
 file names
@@ -38,7 +43,6 @@ void fg(pid_t pid);
 First check whether pid is valid from joblist.
 If flag_set true, send SIGKILL to pid (if child is fg, need to bring shell back to foreground).
 else(flag_set false), send SIGTERM to pid (if child is fg, need to bring shell back to foreground).
-
 */
 void kill(pid_t pid, bool flag_set);
 
