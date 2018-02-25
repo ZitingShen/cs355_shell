@@ -5,7 +5,12 @@
 #include <string>
 #include <vector>
 #include <sys/types.h>
+#include <unistd.h>
+#include <iostream>
+
 #include "joblist.h"
+
+using namespace std;
 
 /*
 evaluate() takes in command tokens separated by "|", and each token have had ">", "<", ">>" separated from
@@ -28,7 +33,7 @@ Step 3: if this is child process:
 1. if there is no piping, do not fork a process to execute built-in functionality.
 2. if there is piping, fork a process to execute each built-in functionality.
 */
-void evaluate (string *command, vector<vector<string>> *parsed_segments, bool *cont);
+void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont);
 
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 
@@ -50,7 +55,6 @@ void fg(pid_t pid);
 First check whether pid is valid from joblist.
 If flag_set true, send SIGKILL to pid (if child is fg, need to bring shell back to foreground).
 else(flag_set false), send SIGTERM to pid (if child is fg, need to bring shell back to foreground).
-
 */
 void kill(pid_t pid, bool flag_set);
 
