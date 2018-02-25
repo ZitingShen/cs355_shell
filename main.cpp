@@ -1,7 +1,9 @@
+#include <iostream>
+
+#include "evaluate.h"
+#include "handle_signal.h"
 #include "joblist.h"
 #include "parse.h"
-#include "signal.h"
-#include <iostream>
 
 using namespace std;
 
@@ -19,7 +21,7 @@ int main(int argc, char **argv) {
   sigemptyset(&sa_sigchld.sa_mask);
   sa_sigchld.sa_flags = SA_SIGINFO;
   if (sigaction(SIGCHLD, &sa_sigchld, 0) == -1) {
-    cerror << "Failed to register SIGCHLD" << endl;
+    cerr << "Failed to register SIGCHLD" << endl;
     exit(1);
   }
 
@@ -27,14 +29,14 @@ int main(int argc, char **argv) {
   sigemptyset(&sa_sigint.sa_mask);
   sa_sigint.sa_flags = SA_SIGINFO;
   if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
-    cerror << "Failed to register SIGINT" << endl;
+    cerr << "Failed to register SIGINT" << endl;
     exit(1);
   }  
 
   // mask SIGSTOP and other signals for the main process
   sigset_t masked_signals;
   sigemptyset(&masked_signals);
-  sigaddset(&masked_signals, SIGSTP);
+  sigaddset(&masked_signals, SIGSTOP);
   sigaddset(&masked_signals, SIGTERM);
   sigaddset(&masked_signals, SIGTTIN);
   sigaddset(&masked_signals, SIGTTOU);
@@ -47,7 +49,7 @@ int main(int argc, char **argv) {
   using_history();
 
   while(cont) {
-    joblist.delete_terminated_jobs();
+    joblist.remove_terminated_jobs();
     
     cmdline = readline("Thou shell not crash> ");
     
@@ -77,7 +79,7 @@ int main(int argc, char **argv) {
       // check semicolons, separate cmdline by semicolons
       // no consecutive semicolons are allowed
       // semicolon cannot be directly preceded by ampersend
-      vector<string> commands = separate_by_semicolon(&cmdline);
+      vector<string> commands = separate_by_semicolon(cmdline);
 
       for(string command: commands) {
         vector<string> segments = separate_by_vertical_bar(&command);
@@ -87,7 +89,7 @@ int main(int argc, char **argv) {
         vector<vector<string>> parsed_segments = parse_segments(&segments);
         
         // hand processed segments to evaluate
-        evaluate(&command, &parsed_segments, &joblist, &cont);
+        evaluate(&command, &parsed_segments, &cont);
       }
     }
   }

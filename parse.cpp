@@ -2,7 +2,7 @@
 
 using namespace std;
 
-vector<string> separate_by_semicolon(string *cmdline) {
+vector<string> separate_by_semicolon(char *cmdline) {
 	vector<string> result;
 	return result;
 }

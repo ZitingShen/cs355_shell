@@ -1,3 +1,12 @@
+#ifndef EVALUATE_H_
+#define EVALUATE_H_
+
+#include <signal.h>
+#include <string>
+#include <vector>
+#include <sys/types.h>
+#include "joblist.h"
+
 /*
 evaluate() takes in command tokens separated by "|", and each token have had ">", "<", ">>" separated from
 file names
@@ -19,7 +28,7 @@ Step 3: if this is child process:
 1. if there is no piping, do not fork a process to execute built-in functionality.
 2. if there is piping, fork a process to execute each built-in functionality.
 */
-void evaluate (vector<string> *command, vector<vector<string>> *parsed_segments, struct joblist_t *joblist, bool *cont);
+void evaluate (string *command, vector<vector<string>> *parsed_segments, bool *cont);
 
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 
@@ -49,3 +58,5 @@ void kill(pid_t pid, bool flag_set);
 stdout all current jobs by checking joblist. Will go over the entire list within this function.
 */
 void jobs();
+
+#endif
