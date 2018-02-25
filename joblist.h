@@ -1,6 +1,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+using namespace std;
+
 /* Jobs states: FG (foreground), BG (background), ST (stopped), DN (done),
  *              TN (terminated)
  * Job state transitions and enabling actions:
@@ -16,19 +18,19 @@ enum job_status {BG, FG, ST, DN, TN}; //foreground done???!!!
 
 struct job_t {
 	int jid; //job id
-	pid_t pid;
+	list<pid_t> pids;
 	job_status status;
 	string cmdline;
 	struct termios ter;
 
-	job(int jid, pid_t pid, job_status status, string *cmdline); /* constructor */
+	job_t(int jid, list<pid_t> pids, job_status status, string *cmdline); /* constructor */
 };
 
 struct joblist_t {
 	int next_jid;
-	list<job> jobs;
+	list<job_t> jobs;
 
-	joblist();
+	joblist_t();
 	int add(pid_t pid, job_status status, string *cmdline);
 	int remove_jid(int jid);
 	int remove_pid(pid_t pid);
