@@ -43,6 +43,9 @@ int main(int argc, char **argv) {
   sigaddset(&masked_signals, SIGQUIT);
   sigprocmask(SIG_BLOCK, &masked_signals ,NULL);
 
+  /* Set previous directory to current directory */
+  string prevDir = getenv("PWD");
+
   // configure readline to auto-complete paths when the tab key is hit
   rl_bind_key('\t', rl_complete);
 
@@ -76,13 +79,17 @@ int main(int argc, char **argv) {
     } else if (strcmp(cmdline, "") != 0) {
       add_history(cmdline);
 
-      // check semicolons, separate cmdline by semicolons
-      // no consecutive semicolons are allowed
       // semicolon cannot be directly preceded by ampersend
-      vector<string> commands = separate_by_semicolon(cmdline);
+      vector<string> commands;
+      if (separate_by_semicolon(cmdline, &commands) < 0) {
+        continue;
+      }
 
       for(string command: commands) {
-        vector<string> segments = separate_by_vertical_bar(&command);
+        vector<string> segments;
+        if (separate_by_vertical_bar(&command, &segments) < 0) {
+          continue;
+        }
 
         // when parsing segments, separate <, >, >> from strings 
         // before and after
