@@ -5,6 +5,7 @@ Not-supported functionality:
 2. consecutive |s
 3. multiple redirection
 4. parentheses in cmdline
+5. for piping, all jobs need to be in either foreground or background.
 
 Extra features:
 1. tab completion
