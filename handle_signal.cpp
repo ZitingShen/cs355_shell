@@ -27,8 +27,7 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 }
 
 void sigint_handler(int sig, siginfo_t *sip, void *notused){
-	cout << "\n" << endl;
-	//print prompt?
+	cout << endl;
 	rl_forced_update_display();
 	//register again??
 }
