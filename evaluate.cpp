@@ -1,12 +1,44 @@
 #include "evaluate.h"
 #define shell_terminal STDIN_FILENO
 #define ZERO 0
+#define ONE 1
 
 extern struct joblist_t joblist;
 extern pid_t shell_pgid;
 extern struct termios shell_tmodes;
 
 using namespace std;
+
+
+
+
+void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
+	set<string> built_in_command = {"fg", "bg", "kill", "jobs"}
+	int len = parsed_segments -> size();
+	//bool bg = FALSE; //whether background
+	enum job_status bg_fg = FG; //default as FG
+	pid_t pid;
+	pid_t chld_pid
+	int status;
+	vector<string> last_seg = parsed_segments -> end();
+	if (len == 1){//no pipe
+		if (built_in_command.count(last_seg.begin()) == ONE){ //if first argument is buildin comment
+			//call builtin
+			//need to do type checking of buildin
+		}
+		else{//not builtin){}
+			if (last_seg.end() == "&"){ //check whether background or foreground
+				bg_fg = FG;
+			}
+			no_pipe_exec(*command, last_seg, bg_fg)
+		}
+	}
+	else{//pipe exist
+		string inter_result;
+	}
+	return;
+}
+
 
 void no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg){
 	pid_t pid;
@@ -29,12 +61,15 @@ void no_pipe_exec (string *command, vector<string> command_segment, enum job_sta
 		}
 		/*update joblist*/
 		joblist.add(chld_pid, bg_fg, command);
+		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		if (execvp(last_seg.begin(), last_seg) < ZERO){
 			cerr << "Child process of " << getppid() << "failed to execute in bg or the execution is interrupted!" << endl;
 		}
 	}
 	else{ //parent process
+		/*unmask signals*/
+		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		//do nothing if bg, will clean up in the next loop.
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
@@ -47,47 +82,28 @@ void no_pipe_exec (string *command, vector<string> command_segment, enum job_sta
 			tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 		}
 	}
-	
-}
-
-void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
-	string inter_result;
-	int len = parsed_segments -> size();
-	//bool bg = FALSE; //whether background
-	enum job_status bg_fg = FG; //default as FG
-	pid_t pid;
-	pid_t chld_pid
-	int status;
-	vector<string> last_seg = parsed_segments -> end();
-	if (len == 1){//no pipe
-		if (){//not builtin){}
-			if (last_seg.end() == "&"){ //check whether background or foreground
-				bg_fg = FG;
-			}
-			no_pipe_exec(*command, last_seg, bg_fg)
-		}
-	}
-	return;
 }
 
 //resume only when job is ST, otherwise ignore
-void bg(vector<int> *pid_list){
+void bg(vector<int> *jid_list){
 	//loop through every job in the list
-	pid_t cur_pid;
+	int cur_jid;
 	pid_t cur_g_pid;
-	for (vector<int>::iterator t = pid_list->begin(); t != pid_list->end(); ++t){
-		cur_pid = *t;
-		if (joblist.find_pid(cur_pid) -> status == ST){
-			cur_g_pid = getpgid(cur_pid);
+	for (vector<int>::iterator t = jid_list->begin(); t != jid_list->end(); ++t){
+		cur_jid = *t;
+		if (joblist.find_jid(cur_jid) -> status == ST){
+			cur_g_pid = joblist.jid2pid(cur_jid);
+			cur_g_pid = getpgid(cur_g_pid); //just to double check
 			if (kill (- cur_g_pid, SIGCONT) < 0){ //let job continue
-			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to continue when in background!" << endl;
+			cerr << "Job " << cur_jid << "failed to continue in background!" << endl;
 			}
 		}
 	}
 }
 
-void fg(pid_t pid){
+void fg(int jid){
 	//check whether pid is valid?
+	pid_t pid = joblist.jid2pid(jid)
 	tcsetpgrp (shell_terminal, pid); //bring job to fg
 	pid_t g_pid = getpgid(pid); //get group id
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
