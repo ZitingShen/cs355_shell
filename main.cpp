@@ -8,13 +8,13 @@
 using namespace std;
 
 struct joblist_t joblist;
+pid_t shell_pgid;
+struct termios shell_tmodes;
 
 int main(int argc, char **argv) {
   bool cont = true;
   struct sigaction sa_sigchld, sa_sigint;
   char *cmdline;
-  pid_t shell_pgid;
-  struct termios shell_tmodes;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
   sa_sigchld.sa_sigaction = &sigchld_handler;
