@@ -15,13 +15,9 @@ using namespace std;
 void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
 	set<string> built_in_command = {"fg", "bg", "kill", "jobs"};
 	int len = parsed_segments -> size();
-	//bool bg = FALSE; //whether background
 	enum job_status bg_fg = FG; //default as FG
-	//pid_t pid;
-	//pid_t chld_pid;
-	//int status;
 	vector<string> last_seg = parsed_segments -> back();
-	if (len == 1){//no pipe
+	if (len == ONE){//no pipe
 		if (built_in_command.count(last_seg.front()) == ONE){ //if first argument is buildin comment
 			//call builtin
 			//need to do type checking of buildin
@@ -73,7 +69,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		joblist.add(chld_pid, bg_fg, command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		if (execvp(argvc[0], argvc) < ZERO){
+		if (execvp(argvc[ZERO], argvc) < ZERO){
 			cerr << "Child process of " << getppid() << "failed to execute or the execution is interrupted!" << endl;
 		}
 	}
@@ -106,25 +102,29 @@ void bg(vector<int> *jid_list){
 	pid_t cur_g_pid;
 	for (vector<int>::iterator t = jid_list->begin(); t != jid_list->end(); ++t){
 		cur_jid = *t;
+		//check whether pid is valid?
 		if (joblist.find_jid(cur_jid) -> status == ST){
 			cur_g_pid = joblist.jid2pid(cur_jid);
 			cur_g_pid = getpgid(cur_g_pid); //just to double check
-			if (kill (- cur_g_pid, SIGCONT) < 0){ //let job continue
+			if (kill (- cur_g_pid, SIGCONT) < ZERO){ //let job continue
 			cerr << "Job " << cur_jid << "failed to continue in background!" << endl;
 			}
 		}
 	}
 }
 
+/*take actions only when given a job with ST or BG status*/
 void fg(int jid){
 	//check whether pid is valid?
 	pid_t pid = joblist.jid2pid(jid);
-	tcsetpgrp (shell_terminal, pid); //bring job to fg
 	pid_t g_pid = getpgid(pid); //get group id
+	tcsetpgrp (shell_terminal, pid); //bring job to fg
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
-		tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); //reset termio if job stopped
-		if (kill (- g_pid, SIGCONT) < 0){ //let job continue
+		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
+			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
+		}
+		if (kill (- g_pid, SIGCONT) < ZERO){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << "failed to continue when trying to be in foreground!" << endl;
 		}
 	}
