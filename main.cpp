@@ -8,13 +8,13 @@
 using namespace std;
 
 struct joblist_t joblist;
+pid_t shell_pgid;
+struct termios shell_tmodes;
 
 int main(int argc, char **argv) {
   bool cont = true;
-  struct sigaction sa_sigchld, sa_sigint;
   char *cmdline;
-  pid_t shell_pgid;
-  struct termios shell_tmodes;
+  struct sigaction sa_sigchld, sa_sigint;
 
   // register signal handler for SIGCHLD and SIGINT using sigaction
   sa_sigchld.sa_sigaction = &sigchld_handler;
@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  sa_sigint.sa_sigaction = &sigchld_handler;
+  sa_sigint.sa_sigaction = &sigint_handler;
   sigemptyset(&sa_sigint.sa_mask);
   sa_sigint.sa_flags = SA_SIGINFO;
   if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
@@ -36,12 +36,12 @@ int main(int argc, char **argv) {
   // mask SIGSTOP and other signals for the main process
   sigset_t masked_signals;
   sigemptyset(&masked_signals);
-  sigaddset(&masked_signals, SIGSTOP);
+  sigaddset(&masked_signals, SIGTSTP);
   sigaddset(&masked_signals, SIGTERM);
   sigaddset(&masked_signals, SIGTTIN);
   sigaddset(&masked_signals, SIGTTOU);
   sigaddset(&masked_signals, SIGQUIT);
-  sigprocmask(SIG_BLOCK, &masked_signals ,NULL);
+  sigprocmask(SIG_BLOCK, &masked_signals, NULL);
 
   /* Set previous directory to current directory */
   string prevDir = getenv("PWD");

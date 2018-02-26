@@ -46,7 +46,7 @@ int separate_by_vertical_bar(string *command, vector<string> *result) {
 		}
 	    command->erase(0, pos + delimiter.length());
 	}
-	result->push_back(command);
+	result->push_back(*command);
 	return 0;
 }
 
