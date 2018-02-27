@@ -89,10 +89,12 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			cerr<< "can not set new group"<<endl;
 		}
 		/*unmask signals*/
-		if (getpgid(getpid()) == getppid()){
-			cerr<< "still in parent group"<<endl;
-		}
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+		if (bg_fg == FG){
+			tcsetpgrp (shell_terminal, pid); //bring job to fg
+			tcgetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
+		}
 
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
