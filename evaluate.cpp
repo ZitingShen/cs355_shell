@@ -91,15 +91,12 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		}
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
-		
-			
-			if (getpgid()==getpid()){
-				cout<<"set new group!"<<endl;
-			}
-			else{
-				cout<<"still in the same group"<<endl;
-			}
+		if (getpgid()==getpid()){
+			cout<<"set new group!"<<endl;
+		}
+		else{
+			cout<<"still in the same group"<<endl;
+		}
 
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
