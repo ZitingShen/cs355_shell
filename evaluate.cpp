@@ -76,7 +76,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
   	argvc[argv.size()] = NULL;
 
   	/* Block SIGCHLD signal while fork(), setpgid and add joblist */  
-  	//sigprocmask(SIG_BLOCK, &signalSet, NULL);
+  	sigprocmask(SIG_BLOCK, &signalSet, NULL);
 
   	/*fork*/
   	if ((pid = fork()) < 0 ){
@@ -90,7 +90,11 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			cerr<< "can not set new group"<<endl;
 		}
 		/*unmask signals*/
-		//sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+		if (getpgid()==getpgid){
+			cout<<"set new group!"<<endl;
+		}
 
 		if (bg_fg == FG){
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
