@@ -1,7 +1,6 @@
 #include "evaluate.h"
 #define shell_terminal STDIN_FILENO
-#define ZERO 0
-#define ONE 1
+
 
 extern struct joblist_t joblist;
 extern pid_t shell_pgid;
@@ -19,10 +18,10 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	vector<string> last_seg = parsed_segments -> back();
 
 	/* No pipe!!*/
-	if (len == ONE){
+	if (len == 1){
 		string cmd; //get the command
 		cmd = last_seg.front();
-		if (built_in_commands.count(cmd) == ONE){ //if first argument is buildin comment
+		if (built_in_commands.count(cmd) == 1){ //if first argument is buildin comment
 			if (cmd.compare("kill") == 0){
 				kill(last_seg);
 			}
@@ -37,7 +36,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			}
 		}
 		else{//not built_in
-			if (last_seg.back().compare("&") == ZERO){ //check whether background or foreground
+			if (last_seg.back().compare("&") == 0){ //check whether background or foreground
 				bg_fg = BG;
 				last_seg.pop_back();
 			}
@@ -72,16 +71,15 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
   	sigprocmask(SIG_BLOCK, &signalSet, NULL);
 
   	/*fork*/
-  	if ((pid = fork()) < ZERO ){
+  	if ((pid = fork()) < 0 ){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
 	}
 
-	if (pid == ZERO){ //in child process
+	if (pid == 0){ //in child process
 		setpgid(0, 0);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		signal(SIGTSTP, SIG_DFL);
-		if (execvp(argvc[ZERO], argvc) < ZERO){
+		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << "failed to execute or the execution is interrupted!" << endl;
 		}
@@ -210,7 +208,7 @@ void bg(vector<string> argv){
     	/*only send sigcont when job is ST*/
 		if (joblist.find_pid(cur_pid) -> status == ST){
 			cur_pid = getpgid(cur_pid); //just to double check
-			if (kill (- cur_pid, SIGCONT) < ZERO){ //let job continue
+			if (kill (- cur_pid, SIGCONT) < 0){ //let job continue
 				cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
 				continue;
 			}
@@ -264,7 +262,7 @@ void fg(vector<string> argv){
 		return;
 	}
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
-		if (kill (- pid, SIGCONT) < ZERO){ //let job continue
+		if (kill (- pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 		}
 		tcsetpgrp (shell_terminal, pid); //bring job to fg
