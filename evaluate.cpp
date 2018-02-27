@@ -279,7 +279,7 @@ void fg(vector<string> argv){
 		}
 		tcsetpgrp (shell_terminal, pid); //bring job to fg
 		//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
-		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
+		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
 		}
@@ -289,6 +289,7 @@ void fg(vector<string> argv){
 		if (WIFSTOPPED(status)){ //store child termio if stopped
 			tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
 		}
+		tcsetpgrp (shell_terminal, shell_pgid);
 		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 	}
 
