@@ -94,7 +94,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 		if (bg_fg == FG){
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
-			tcgetattr (shell_terminal, &shell_tmodes);
+			tcsetattr (shell_terminal, &shell_tmodes);
 		}
 
 		if (execvp(argvc[0], argvc) < 0){
