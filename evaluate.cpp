@@ -84,6 +84,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 
 	if (pid == 0){ //in child process
+		signal(SIGINT, SIG_DFL);
 		cout<<"here"<<endl;
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
@@ -93,7 +94,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 		if (bg_fg == FG){
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
-			tcgetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
+			tcgetattr (shell_terminal, &shell_tmodes);
 		}
 
 		if (execvp(argvc[0], argvc) < 0){
