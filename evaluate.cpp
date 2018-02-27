@@ -42,7 +42,6 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			if (last_seg.back().compare("&") == 0){ //check whether background or foreground
 				bg_fg = BG;
 				last_seg.pop_back();
-				cout << "running bg" << endl;
 			}
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
@@ -62,10 +61,6 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
   	sigemptyset(&signalSet);
   	sigaddset(&signalSet, SIGCHLD);
 
-  	for (int j = 0; j < argv.size(); j++){
-  		cout << argv[j] << endl;
-  	}
-
   	/*Store arguemtns in c strings.*/
   	char** argvc = new char*[argv.size()+1]; 
   	for(unsigned int i = 0; i < argv.size(); i++) {
@@ -83,39 +78,12 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
 	}
 
-	if (pid == 0 && bg_fg == FG){ //in child process
-		//signal(SIGINT, SIG_DFL);
-		//cout<<"here"<<endl;
+	if (pid == 0){ //bg
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
 		}
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		if (getpgid(getpid())==getpid()){
-			cout<<"set new group!"<<endl;
-		}
-		else{
-			cout<<"still in the same group"<<endl;
-		}
-
-		if (execvp(argvc[0], argvc) < 0){
-			// TODO: print different error message depending on errno.
-			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
-		}
-	}
-	else if (pid == 0){ //bg
-		if (setpgid(0, 0)<0){
-			cerr<< "can not set new group"<<endl;
-		}
-		/*unmask signals*/
-		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
-		if (getpgid(getpid())==getpid()){
-			cout<<"set new group!"<<endl;
-		}
-		else{
-			cout<<"still in the same group"<<endl;
-		}
 		
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
@@ -129,20 +97,13 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		if (bg_fg == FG){
-			tcsetpgrp (shell_terminal, pid); //bring job to fg
-			tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
-		}
 
 		int status;
 
-		//cerr << pid << endl;
-		//cerr << getpgid(pid) << endl;
 		//do nothing if bg, will clean up in the next loop.
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
-			cout << "outout" <<endl;
 			/*does this order matter? tcsetpgrp() first or tcgetattr() first?*/
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
@@ -174,7 +135,7 @@ void kill(vector<string> argv){
 
 	pid_t cur_pid;
 	int signo = SIGTERM;
-	int i = 1;
+	unsigned int i = 1;
 	if (argv[1].compare("-9") == 0){
 		cout << "flag found" << endl;
 		signo = SIGKILL;
@@ -225,9 +186,8 @@ void bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
 	pid_t cur_pid;
-	int i = 1;
 
-	for (; i < argv.size(); i++){
+	for (unsigned int i = 1; i < argv.size(); i++){
 
 		/*check whether there is %*/
 		if ( argv[i][0] == '%') {
