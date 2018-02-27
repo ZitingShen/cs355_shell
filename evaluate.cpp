@@ -278,7 +278,7 @@ void fg(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 		}
 		tcsetpgrp (shell_terminal, pid); //bring job to fg
-		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
+		//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
