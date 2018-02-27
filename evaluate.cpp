@@ -11,7 +11,7 @@ using namespace std;
 
 void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	
-	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history"};
+	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
 	int len = parsed_segments -> size();
 	enum job_status bg_fg = FG; //default as FG
@@ -33,6 +33,9 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			}
 			else if(cmd.compare("jobs") == 0){
 				jobs();
+			}
+			else if(cmd.compare("exit") == 0){
+				exit(EXIT_SUCCESS);
 			}
 		}
 		else{//not built_in
@@ -81,7 +84,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
-			cerr << "Child process of " << getppid() << "failed to execute or the execution is interrupted!" << endl;
+			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
 		}
 	}
 	else{ //parent process
