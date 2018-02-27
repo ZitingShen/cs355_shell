@@ -54,14 +54,11 @@ vector<vector<string>> parse_segments(vector<string> *segments) {
 	vector<vector<string>> result;
 	for(int i = 0; i < segments->size(); i++) {
 		vector<string> partial_result;
-		stringstream segment;
+		stringstream segment((*segments)[i]);
 		string part;
-		segment << (*segments)[i];
 
-		while (segment) {
-			segment >> part;
+		while (segment >> part)
 			partial_result.push_back(part);
-		}
 		result.push_back(partial_result);
 	}
 	return result;

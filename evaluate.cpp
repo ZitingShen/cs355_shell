@@ -77,20 +77,17 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 
 	if (pid == ZERO){ //in child process
-		/*setpgid*/
-		pid_t chld_pid = getpid();
-		if ((setpgid(chld_pid, chld_pid)) < ZERO){
-			cerr << "Failed to set a new group for child process " << chld_pid << "!" << endl;
-		}
-		/*update joblist*/
-		joblist.add(chld_pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
 		if (execvp(argvc[ZERO], argvc) < ZERO){
+			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << "failed to execute or the execution is interrupted!" << endl;
 		}
 	}
 	else{ //parent process
+		/*update joblist*/
+		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		int status;
@@ -99,17 +96,18 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
 			/*does this order matter? tcsetpgrp() first or tcgetattr() first?*/
-			tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
 			if (WIFSTOPPED(status)){ //store child termio if stopped
+				tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
 				tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
+				tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 			}
-			tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 		}
 	}
-	for(unsigned int i = 0; i < argv.size(); i++) {
-    delete[] argvc[i];
+	for(unsigned int i = 0; i < argv.size()+1; i++) {
+    	delete[] argvc[i];
   	}
   	delete[] argvc;
+  	
 }
 
 /*
@@ -184,8 +182,8 @@ void bg(vector<string> argv){
 		if (joblist.find_pid(cur_pid) -> status == ST){
 			cur_pid = getpgid(cur_pid); //just to double check
 			if (kill (- cur_pid, SIGCONT) < ZERO){ //let job continue
-			cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
-			continue;
+				cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
+				continue;
 			}
 			joblist.find_pid(cur_pid) -> status = BG;
 		}
@@ -250,5 +248,5 @@ void fg(vector<string> argv){
 
 
 void jobs(){
-	return;
+	joblist.listjobs();
 }
