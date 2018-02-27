@@ -12,7 +12,6 @@ pid_t shell_pgid;
 struct termios shell_tmodes;
 
 int main(int argc, char **argv) {
-  bool cont = true;
   char *cmdline;
   struct sigaction sa_sigchld, sa_sigint;
 
@@ -22,7 +21,7 @@ int main(int argc, char **argv) {
   sa_sigchld.sa_flags = SA_SIGINFO;
   if (sigaction(SIGCHLD, &sa_sigchld, 0) == -1) {
     cerr << "Failed to register SIGCHLD" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   sa_sigint.sa_sigaction = &sigint_handler;
@@ -30,7 +29,7 @@ int main(int argc, char **argv) {
   sa_sigint.sa_flags = SA_SIGINFO;
   if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
     cerr << "Failed to register SIGINT" << endl;
-    exit(1);
+    exit(EXIT_FAILURE);
   }  
 
   // mask SIGSTOP and other signals for the main process
@@ -51,15 +50,14 @@ int main(int argc, char **argv) {
 
   using_history();
 
-  while(cont) {
+  while(true) {
     joblist.remove_terminated_jobs();
     
     cmdline = readline("Thou shell not crash> ");
     
     if (cmdline == NULL) { /* End of file (ctrl-d) */
       cout << endl;
-      cont = 0;
-      continue;
+      exit(EXIT_SUCCESS);
     }
 
     // check for history expansion
@@ -96,7 +94,7 @@ int main(int argc, char **argv) {
         vector<vector<string>> parsed_segments = parse_segments(&segments);
         
         // hand processed segments to evaluate
-        evaluate(&command, &parsed_segments, &cont);
+        evaluate(&command, &parsed_segments);
       }
     }
   }

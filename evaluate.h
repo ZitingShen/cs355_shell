@@ -37,7 +37,7 @@ Step 3: if this is child process:
 1. if there is no piping, do not fork a process to execute built-in functionality.
 2. if there is piping, fork a process to execute each built-in functionality.
 */
-void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont);
+void evaluate(string *command, vector<vector<string>> *parsed_segments);
 
 void no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
 

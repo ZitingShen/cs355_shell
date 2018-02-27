@@ -10,7 +10,7 @@ extern struct termios shell_tmodes;
 using namespace std;
 
 
-void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
+void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history"};
 	
