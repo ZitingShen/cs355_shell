@@ -42,6 +42,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			if (last_seg.back().compare("&") == 0){ //check whether background or foreground
 				bg_fg = BG;
 				last_seg.pop_back();
+				cout << "running bg" <<endl;
 			}
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
@@ -150,8 +151,8 @@ void kill(vector<string> argv){
         	else{ //then is pid
         		cout << "trying kill by pid" << endl;
         		cur_pid = stoi(argv[i]);
-        		if (!joblist.find_pid(stoi(argv[i]))){
-        			cerr << "Job with pid " << stoi(argv[i]) << "does not exist" << endl;
+        		if (!joblist.find_pid(cur_pid)){
+        			cerr << "Job with pid " << argv[i] << "does not exist" << endl;
         			continue;
         		}
         		
