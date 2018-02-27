@@ -4,9 +4,13 @@
 #include <signal.h>
 #include <string>
 #include <vector>
+#include <set>
 #include <sys/types.h>
 #include <unistd.h>
 #include <iostream>
+#include <sys/wait.h>
+#include <unistd.h>
+
 
 #include "joblist.h"
 
@@ -34,6 +38,8 @@ Step 3: if this is child process:
 2. if there is piping, fork a process to execute each built-in functionality.
 */
 void evaluate(string *command, vector<vector<string>> *parsed_segments);
+
+void no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
 
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 
