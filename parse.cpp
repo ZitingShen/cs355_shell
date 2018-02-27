@@ -52,6 +52,18 @@ int separate_by_vertical_bar(string *command, vector<string> *result) {
 
 vector<vector<string>> parse_segments(vector<string> *segments) {
 	vector<vector<string>> result;
+	for(int i = 0; i < segments->size(); i++) {
+		vector<string> partial_result;
+		stringstream segment;
+		string part;
+		segment << (*segments)[i];
+
+		while (segment) {
+			segment >> part;
+			partial_result.push_back(part);
+		}
+		result.push_back(partial_result);
+	}
 	return result;
 }
 
