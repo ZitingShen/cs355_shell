@@ -3,6 +3,7 @@
 
 #include <signal.h>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <set>
 #include <sys/types.h>
