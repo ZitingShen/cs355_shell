@@ -77,6 +77,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 
 	if (pid == ZERO){ //in child process
+		setpgid(0, 0);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		signal(SIGTSTP, SIG_DFL);
@@ -99,6 +100,11 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			/*does this order matter? tcsetpgrp() first or tcgetattr() first?*/
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
+				if (!joblist.find_pid(pid)){
+					cerr << "No such process with process id " << pid << endl;
+					tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
+					return;
+				}
 				tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
 				tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 			}
@@ -124,6 +130,7 @@ void kill(vector<string> argv){
 	int signo = SIGTERM;
 	int i = 1;
 	if (argv[1].compare("-9") == 0){
+		cout << "flag found" << endl;
 		signo = SIGKILL;
 		i++;
 	}
@@ -132,15 +139,27 @@ void kill(vector<string> argv){
 		/* check if pid or jid */
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
+				cout << "trying kill by jid" << endl;
+				if (!joblist.find_jid(stoi(argv[i].substr(1, string::npos)))){
+					cerr << "Job " << argv[i].substr(1, string::npos) << " does not exist!" << endl;
+					continue;
+				}
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1, string::npos)));
 			}
         	else{ //then is pid
+        		cout << "trying kill by pid" << endl;
+        		if (!joblist.find_pid(stoi(argv[i]))){
+        			cerr << "Job with pid " << stoi(argv[i]) << "does not exist" << endl;
+        			continue;
+        		}
         		cur_pid = stoi(argv[i]);
         	}
     	} catch (exception &e){
     		cerr << "No process with process number " << cur_pid << endl;
     		continue; //continue to the next iteration
    		}
+
+   		
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check gpid
 		if (kill (- cur_pid, signo) < 0){
@@ -174,11 +193,19 @@ void bg(vector<string> argv){
       	/*convert jid into pid*/
 		try {
 			//check whether pid is valid?
+			if (!joblist.jid2pid(stoi(s_cur_jid))){
+				cerr << "Job" << s_cur_jid << "does not exist!" << endl;
+				return;
+			}
         	cur_pid = joblist.jid2pid(stoi(s_cur_jid));
       	} catch (exception &e){
     		cerr << "No job with job number " << s_cur_jid << endl;
     		continue; //continue to the next iteration
     	}
+
+    	if (!joblist.find_pid(cur_pid)){
+			cerr << "No such job with process id: "<< cur_pid << endl;
+		}
 
     	/*only send sigcont when job is ST*/
 		if (joblist.find_pid(cur_pid) -> status == ST){
@@ -212,8 +239,16 @@ void fg(vector<string> argv){
 	try {
       if (argv[1][0] == '%') {
       	//check whether pid is valid?
+      	if (!joblist.jid2pid(stoi(argv[1].substr(1, string::npos)))){
+      		cerr << "Job " << argv[1].substr(1, string::npos) << " does not exist!" << endl;
+      		return;
+      	}
         pid = joblist.jid2pid(stoi(argv[1].substr(1, string::npos)));
       } else {
+      	if (!joblist.jid2pid(stoi(argv[1]))){
+      		cerr << "Job " << argv[1] << " does not exist!" << endl;
+      		return;
+      	}
         pid = joblist.jid2pid(stoi(argv[1]));
       }
     } catch (exception &e){
@@ -224,9 +259,13 @@ void fg(vector<string> argv){
 	pid = getpgid(pid); //get group id, just to double check.	
 
 	/* if job is ST or BG */
+	if (!joblist.find_pid(pid)){
+		cerr << "No such job "<< pid << endl;
+		return;
+	}
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		if (kill (- pid, SIGCONT) < ZERO){ //let job continue
-			cerr << "Job " << joblist.pid2jid(pid) << "failed to continue when trying to be in foreground!" << endl;
+			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 		}
 		tcsetpgrp (shell_terminal, pid); //bring job to fg
 		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
