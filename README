@@ -6,6 +6,7 @@ Not-supported functionality:
 3. multiple redirection
 4. parentheses in cmdline
 5. for piping, all jobs need to be in either foreground or background.
+6. bg, fg, kill, jobs, exit and history cannot be executed in background.
 
 Extra features:
 1. tab completion

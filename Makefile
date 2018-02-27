@@ -17,3 +17,6 @@ evaluate.o: evaluate.cpp
 
 joblist.o: joblist.cpp
 	$(CC) $(CFLAGS) -c joblist.cpp
+
+clean:
+	rm main parse.o handle_signal.o evaluate.o joblist.o
