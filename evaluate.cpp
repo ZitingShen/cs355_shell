@@ -149,11 +149,12 @@ void kill(vector<string> argv){
 			}
         	else{ //then is pid
         		cout << "trying kill by pid" << endl;
+        		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(stoi(argv[i]))){
         			cerr << "Job with pid " << stoi(argv[i]) << "does not exist" << endl;
         			continue;
         		}
-        		cur_pid = stoi(argv[i]);
+        		
         	}
     	} catch (exception &e){
     		cerr << "No process with process number " << cur_pid << endl;
