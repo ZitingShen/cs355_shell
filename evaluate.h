@@ -2,6 +2,7 @@
 #define EVALUATE_H_
 
 #include <signal.h>
+#include <stdlib.h>
 #include <string>
 #include <cstring>
 #include <vector>
