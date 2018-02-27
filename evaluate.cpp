@@ -237,12 +237,6 @@ void bg(vector<string> argv){
 void fg(vector<string> argv){
 	pid_t pid;
 	sigset_t masked_signals;
-  	sigemptyset(&masked_signals);
-  	sigaddset(&masked_signals, SIGTSTP);
-  	sigaddset(&masked_signals, SIGTERM);
-  	sigaddset(&masked_signals, SIGTTIN);
-  	sigaddset(&masked_signals, SIGTTOU);
-  	sigaddset(&masked_signals, SIGQUIT);
   	
 	/*check argv size*/
 	if (argv.size() < 2){
@@ -291,7 +285,6 @@ void fg(vector<string> argv){
 			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
 		}
 		joblist.find_pid(pid) -> status = FG;
-		sigprocmask(SIG_UNBLOCK, &masked_signals, NULL);
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (WIFSTOPPED(status)){ //store child termio if stopped
