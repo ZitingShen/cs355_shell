@@ -95,7 +95,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
 			tcsetattr (shell_terminal, &shell_tmodes);
-			if (getpgid()==getpgid){
+			if (getpgid()==getpid()){
 				cout<<"set new group!"<<endl;
 			}
 			else{
