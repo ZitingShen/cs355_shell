@@ -11,22 +11,41 @@ using namespace std;
 
 
 void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
-	set<string> built_in_command = {"fg", "bg", "kill", "jobs"};
+	
+	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history"};
+	
 	int len = parsed_segments -> size();
 	enum job_status bg_fg = FG; //default as FG
 	vector<string> last_seg = parsed_segments -> back();
-	if (len == ONE){//no pipe
-		if (built_in_command.count(last_seg.front()) == ONE){ //if first argument is buildin comment
-			//call builtin
-			//need to do type checking of buildin
+
+	/* No pipe!!*/
+	if (len == ONE){
+		string cmd; //get the command
+		cmd = last_seg.front();
+		if (built_in_commands.count(cmd) == ONE){ //if first argument is buildin comment
+			if (cmd.compare("kill") == 0){
+				kill(last_seg);
+			}
+			else if(cmd.compare("bg") == 0){
+				bg(last_seg);
+			}
+			else if(cmd.compare("fg") == 0){
+				fg(last_seg);
+			}
+			else if(cmd.compare("jobs") == 0){
+				jobs();
+			}
 		}
-		else{//not builtin){}
+		else{//not built_in
 			if (last_seg.back().compare("&") == ZERO){ //check whether background or foreground
 				bg_fg = BG;
+				last_seg.pop_back();
 			}
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
 	}
+
+	/* Pipe exists!!*/
 	else{//pipe exist
 		string inter_result;
 	}
@@ -101,18 +120,32 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 */
 void kill(vector<string> argv){
 
-	pid_t pid =0;
-	pid_t g_pid; 
+	pid_t cur_pid;
 	int signo = SIGTERM;
-
+	int i = 1;
 	if (argv[1].compare("-9") == 0){
-		sig = SIGKILL;
+		signo = SIGKILL;
+		i++;
 	}
 
-	
-
-	if (kill (- g_pid, signo) < 0){
-		cerr << "Job " << joblist.pid2jid(pid) << "failed to be killed!" << endl;
+	for (;i < argv.size(); i++){
+		/* check if pid or jid */
+		try {
+			if (argv[i][0] == '%'){ //then this is jobid
+				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1, string::npos)));
+			}
+        	else{ //then is pid
+        		cur_pid = stoi(argv[i]);
+        	}
+    	} catch (exception &e){
+    		cerr << "No process with process number " << cur_pid << endl;
+    		continue; //continue to the next iteration
+   		}
+   		//send signo to pid
+   		cur_pid = getpgid(cur_pid);//just to double check gpid
+		if (kill (- cur_pid, signo) < 0){
+			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
+		}
 	}
 }
 
@@ -126,18 +159,19 @@ void bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
 	pid_t cur_pid;
+	int i = 1;
 
-	for (vector<string>::iterator t = next(argv.begin()); t != argv.end(); ++t){
+	for (; i < argv.size(); i++){
 
 		/*check whether there is %*/
-		if (t -> c_str()[0] == '%') {
-      		s_cur_jid = t ->c_str();
-      		s_cur_jid = cur_jid.substr(1, string::npos);
+		if ( argv[i][0] == '%') {
+      		s_cur_jid = argv[i].substr(1, string::npos);
       	} 
       	else {
-      		s_cur_jid = t -> c_str();
+      		s_cur_jid = argv[i];
       	}
 
+      	/*convert jid into pid*/
 		try {
 			//check whether pid is valid?
         	cur_pid = joblist.jid2pid(stoi(s_cur_jid));
@@ -167,7 +201,7 @@ void bg(vector<string> argv){
 (3) job number can be without % */
 void fg(vector<string> argv){
 	pid_t pid;
-	pid_t g_pid;
+
 	/*check argv size*/
 	if (argv.size() < 2){
 		cerr << "fg command requires job id!" << endl;
@@ -187,19 +221,28 @@ void fg(vector<string> argv){
       	return;
     }
 
-	g_pid = getpgid(pid); //get group id, just to double check.
+	pid = getpgid(pid); //get group id, just to double check.	
 
-	tcsetpgrp (shell_terminal, pid); //bring job to fg
-
+	/* if job is ST or BG */
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
-		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
+		if (kill (- pid, SIGCONT) < ZERO){ //let job continue
+			cerr << "Job " << joblist.pid2jid(pid) << "failed to continue when trying to be in foreground!" << endl;
+		}
+		tcsetpgrp (shell_terminal, pid); //bring job to fg
+		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
 		}
-		if (kill (- g_pid, SIGCONT) < ZERO){ //let job continue
-			cerr << "Job " << joblist.pid2jid(pid) << "failed to continue when trying to be in foreground!" << endl;
+		joblist.find_pid(pid) -> status = FG;
+		int status;
+		waitpid(pid, &status, WUNTRACED);
+		if (WIFSTOPPED(status)){ //store child termio if stopped
+			tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
 		}
+		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 	}
+
+	/* if job is not ST or BG, cerr */
 	else{
 		cerr << "Job " << argv[1] << "can not be brought to foreground since it is neither ST nor BG!" << endl;
 	}
