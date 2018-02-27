@@ -107,7 +107,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		}
 	}
 	for(unsigned int i = 0; i < argv.size(); i++) {
-    delete[] argvc[i];
+    	delete[] argvc[i];
   	}
   	delete[] argvc;
 }
@@ -250,5 +250,5 @@ void fg(vector<string> argv){
 
 
 void jobs(){
-	return;
+	joblist.listjobs();
 }
