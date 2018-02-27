@@ -85,13 +85,13 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 	if (pid == 0 && bg_fg == FG){ //in child process
 		//signal(SIGINT, SIG_DFL);
-		cout<<"here"<<endl;
+		//cout<<"here"<<endl;
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
 		}
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		if (getpgid()==getpid()){
+		if (getpgid(getpid())==getpid()){
 			cout<<"set new group!"<<endl;
 		}
 		else{
@@ -109,6 +109,14 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		}
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+		if (getpgid(getpid())==getpid()){
+			cout<<"set new group!"<<endl;
+		}
+		else{
+			cout<<"still in the same group"<<endl;
+		}
+		
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
@@ -116,13 +124,14 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 	}
 	else{ //parent process
+		setpgid(pid,pid);
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		if (bg_fg == FG){
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
-			tcsetattr (shell_terminal, &shell_tmodes);
+			tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 		}
 
 		int status;
@@ -310,8 +319,7 @@ void fg(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 		}
 		tcsetpgrp (shell_terminal, pid); //bring job to fg
-		//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
-		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
+		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
 		}
