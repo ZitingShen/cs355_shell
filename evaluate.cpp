@@ -203,6 +203,7 @@ void bg(vector<string> argv){
 
     	if (!joblist.find_pid(cur_pid)){
 			cerr << "No such job with process id: "<< cur_pid << endl;
+			continue;
 		}
 
     	/*only send sigcont when job is ST*/
@@ -256,11 +257,13 @@ void fg(vector<string> argv){
 
 	pid = getpgid(pid); //get group id, just to double check.	
 
-	/* if job is ST or BG */
+	
 	if (!joblist.find_pid(pid)){
 		cerr << "No such job "<< pid << endl;
 		return;
 	}
+
+	/* if job is ST or BG */
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		if (kill (- pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
