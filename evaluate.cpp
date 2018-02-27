@@ -89,7 +89,9 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			cerr<< "can not set new group"<<endl;
 		}
 		/*unmask signals*/
-
+		if (getpgid(getpid()) == getppid()){
+			cerr<< "still in parent group"<<endl;
+		}
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
 		if (execvp(argvc[0], argvc) < 0){
