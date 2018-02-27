@@ -79,7 +79,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	if (pid == ZERO){ //in child process
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
+		signal(SIGTSTP, SIG_DFL);
 		if (execvp(argvc[ZERO], argvc) < ZERO){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << "failed to execute or the execution is interrupted!" << endl;
@@ -95,6 +95,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
+			cout << "outout" <<endl;
 			/*does this order matter? tcsetpgrp() first or tcgetattr() first?*/
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
