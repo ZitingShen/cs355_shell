@@ -86,6 +86,8 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	if (pid == 0){ //in child process
 		setpgid(0, 0);
 		/*unmask signals*/
+		cout << getpid() << endl;
+		cout << getpgid() <<endl;
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
