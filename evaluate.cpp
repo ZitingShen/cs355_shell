@@ -85,7 +85,9 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 	if (pid == 0){ //in child process
 		cout<<"here"<<endl;
-		setpgid(0, 0);
+		if (setpgid(0, 0)<0){
+			cerr<< "can not set new group"<<endl;
+		}
 		/*unmask signals*/
 
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
