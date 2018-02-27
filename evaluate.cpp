@@ -90,8 +90,6 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
-		cerr << getpid() << endl;
-		cerr << getpgid() << endl;
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
@@ -103,6 +101,9 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		int status;
+
+		cerr << pid << endl;
+		cerr << getpgid(pid) << endl;
 		//do nothing if bg, will clean up in the next loop.
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
