@@ -4,6 +4,7 @@
 #include "handle_signal.h"
 #include "joblist.h"
 #include "parse.h"
+#define shell_terminal STDIN_FILENO
 
 using namespace std;
 
@@ -12,6 +13,7 @@ pid_t shell_pgid;
 struct termios shell_tmodes;
 
 int main(int argc, char **argv) {
+  tcgetattr (shell_terminal, &shell_tmodes);
   char *cmdline;
   struct sigaction sa_sigchld, sa_sigint;
 
@@ -26,7 +28,7 @@ int main(int argc, char **argv) {
 
   sa_sigint.sa_sigaction = &sigint_handler;
   sigemptyset(&sa_sigint.sa_mask);
-  sa_sigint.sa_flags = SA_SIGINFO;
+  sa_sigint.sa_flags = SA_SIGINFO | SA_RESTART;
   if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
     cerr << "Failed to register SIGINT" << endl;
     exit(EXIT_FAILURE);
