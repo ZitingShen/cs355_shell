@@ -117,13 +117,26 @@ int joblist_t::pid2jid(pid_t pid) {
 
 void joblist_t::listjobs() {
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		cout << '[' << it->jid << "]" << '\t';
 		switch(it->status) {
 			case BG:
-			case FG: cout << "Running\t\t\t"; break;
-			case ST: cout << "Stopped\t\t\t\t";
+			case FG:
+				cout << '[' << it->jid << "]" << '\t' << "Running\t\t\t"
+					 << it->cmdline << endl << flush;
+				break;
+			case ST:
+				cout << '[' << it->jid << "]" << '\t' << "Stopped\t\t\t"
+				     << it->cmdline << endl << flush;
+				break;
+			#if (DEBUG)
+			case DN:
+				cout << '[' << it->jid << "]" << '\t' << "Done\t\t\t"
+					 << it->cmdline << endl << flush;
+				break;
+			case TN:
+				cout << '[' << it->jid << "]" << '\t' << "Terminated\t\t\t"
+					 << it->cmdline << endl << flush;
+			#endif
 			default:;
 		}
-		cout << it->cmdline << endl << flush;
 	}
 }
