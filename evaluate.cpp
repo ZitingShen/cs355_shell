@@ -3,7 +3,6 @@
 
 
 extern struct joblist_t joblist;
-extern pid_t shell_pgid;
 extern struct termios shell_tmodes;
 
 using namespace std;
@@ -78,13 +77,26 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
 	}
 
-	if (pid == 0){ //bg
-		if (setpgid(0, 0)<0){
-			cerr<< "can not set new group"<<endl;
+	if (pid == 0){
+		if (setpgid(0, 0) < 0){
+			cerr << "Failed to set new group" << endl;
 		}
+		
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-		
+
+		if (bg_fg == FG){ 
+  			tcsetpgrp(shell_terminal, getpid());
+  		}
+
+		signal(SIGCHLD, SIG_DFL);
+		signal(SIGINT, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		signal(SIGTERM, SIG_DFL);
+		signal(SIGTTIN, SIG_DFL);
+		signal(SIGTTOU, SIG_DFL);
+		signal(SIGQUIT, SIG_DFL);
+
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
@@ -92,11 +104,20 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 	}
 	else{ //parent process
-		setpgid(pid,pid);
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+		if (setpgid(pid, pid) < 0){
+			cerr<< "Failed to set new group"<<endl;
+		}
+
+		if (bg_fg == FG){ 
+  			tcsetpgrp(shell_terminal, pid);
+  		} else {
+  			tcsetpgrp(shell_terminal, getpid());
+  		}
 
 		int status;
 
@@ -104,17 +125,18 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
-			/*does this order matter? tcsetpgrp() first or tcgetattr() first?*/
+			tcsetpgrp(shell_terminal, getpid()); //bring shell to fg
+
 			if (WIFSTOPPED(status)){ //store child termio if stopped
-				tcsetpgrp (shell_terminal, shell_pgid); //bring shell to fg
 				if (!joblist.find_pid(pid)){
 					cerr << "No such process with process id " << pid << endl;
 					tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 					return;
 				}
-				tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
-				tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+				tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter); 
 			}
+
+			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 		}
 	}
 
@@ -145,11 +167,11 @@ void kill(vector<string> argv){
 		/* check if pid or jid */
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
-				if (!joblist.find_jid(stoi(argv[i].substr(1, string::npos)))){
-					cerr << "Job " << argv[i].substr(1, string::npos) << " does not exist!" << endl;
+				if (!joblist.find_jid(stoi(argv[i].substr(1)))){
+					cerr << "Job " << argv[i].substr(1) << " does not exist!" << endl;
 					continue;
 				}
-				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1, string::npos)));
+				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1)));
 			}
         	else{ //then is pid
         		cur_pid = stoi(argv[i]);
@@ -166,8 +188,8 @@ void kill(vector<string> argv){
 
    		
    		//send signo to pid
-   		cur_pid = getpgid(cur_pid);//just to double check gpid
-		if (kill (- cur_pid, signo) < 0){
+   		cur_pid = getpgid(cur_pid);//just to double check pgid
+		if (kill(-cur_pid, signo) > 0){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
@@ -286,7 +308,7 @@ void fg(vector<string> argv){
 		if (WIFSTOPPED(status)){ //store child termio if stopped
 			tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
 		}
-		tcsetpgrp (shell_terminal, shell_pgid);
+		tcsetpgrp (shell_terminal, getpid());
 		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 	}
 

@@ -1,9 +1,12 @@
 #include "handle_signal.h"
 #include "joblist.h" 
 
+#define shell_terminal STDIN_FILENO
+
 using namespace std;
 
 extern struct joblist_t joblist;
+extern struct termios shell_tmodes;
 
 void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	int exit_status = sip->si_status;
@@ -24,9 +27,10 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 		cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status
 			) << endl;
 	}
+	cout << pid << "\t" << exit_status << endl;
 }
 
-void sigint_handler(int sig, siginfo_t *sip, void *notused){
+void sigint_handler(int sig){
 	cout << endl;
 	rl_forced_update_display();
 }

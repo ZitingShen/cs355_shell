@@ -59,7 +59,7 @@ vector<vector<string>> parse_segments(vector<string> *segments) {
 
 		while (segment >> part)
 			partial_result.push_back(part);
-		if(part.at(part.size()-1) == '&') {
+		if(part != "&" and part.at(part.size()-1) == '&') {
 			partial_result[partial_result.size()-1] = part.substr(0, part.size()-1);
 			partial_result.push_back("&");
 		}
