@@ -83,8 +83,8 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
 	}
 
-	if (pid == 0){ //in child process
-		signal(SIGINT, SIG_DFL);
+	if (pid == 0 && bg_fg == FG){ //in child process
+		//signal(SIGINT, SIG_DFL);
 		cout<<"here"<<endl;
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
@@ -92,9 +92,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
-
-
-		if (bg_fg == FG){
+		
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
 			tcsetattr (shell_terminal, &shell_tmodes);
 			if (getpgid()==getpgid){
@@ -103,12 +101,23 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			else{
 				cout<<"still in the same group"<<endl;
 			}
-		}
 
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
 		}
+	}
+	else if (pid == 0){
+		if (setpgid(0, 0)<0){
+			cerr<< "can not set new group"<<endl;
+		}
+		/*unmask signals*/
+		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+		if (execvp(argvc[0], argvc) < 0){
+			// TODO: print different error message depending on errno.
+			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
+		}
+
 	}
 	else{ //parent process
 		/*update joblist*/
