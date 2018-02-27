@@ -117,6 +117,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 	else{ //parent process
 		/*update joblist*/
+		set(pid,pid);
 		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
