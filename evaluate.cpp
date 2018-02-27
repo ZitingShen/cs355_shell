@@ -92,13 +92,14 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
-		if (getpgid()==getpgid){
-			cout<<"set new group!"<<endl;
-		}
+
 
 		if (bg_fg == FG){
 			tcsetpgrp (shell_terminal, pid); //bring job to fg
 			tcsetattr (shell_terminal, &shell_tmodes);
+			if (getpgid()==getpgid){
+			cout<<"set new group!"<<endl;
+		}
 		}
 
 		if (execvp(argvc[0], argvc) < 0){
