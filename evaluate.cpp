@@ -83,7 +83,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			cerr << "Failed to set a new group for child process " << chld_pid << "!" << endl;
 		}
 		/*update joblist*/
-		joblist.add(chld_pid, bg_fg, command);
+		joblist.add(chld_pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 		if (execvp(argvc[ZERO], argvc) < ZERO){
