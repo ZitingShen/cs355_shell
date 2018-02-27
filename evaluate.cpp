@@ -103,7 +103,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
 		}
 	}
-	else if (pid == 0){
+	else if (pid == 0){ //bg
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
 		}
@@ -117,7 +117,6 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 	else{ //parent process
 		/*update joblist*/
-		set(pid,pid);
 		joblist.add(pid, bg_fg, *command);
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
