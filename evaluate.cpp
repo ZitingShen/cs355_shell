@@ -42,7 +42,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			if (last_seg.back().compare("&") == 0){ //check whether background or foreground
 				bg_fg = BG;
 				last_seg.pop_back();
-				cout << "running bg" <<endl;
+				cout << "running bg" << endl;
 			}
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
@@ -61,6 +61,10 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	sigset_t signalSet;  
   	sigemptyset(&signalSet);
   	sigaddset(&signalSet, SIGCHLD);
+
+  	for (int j = 0; j < argv.size(); j++){
+  		cout << argv[j] << endl;
+  	}
 
   	/*Store arguemtns in c strings.*/
   	char** argvc = new char*[argv.size()+1]; 
