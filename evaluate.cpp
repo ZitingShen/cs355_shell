@@ -6,7 +6,7 @@ extern pid_t shell_pgid;
 extern struct termios shell_tmodes;
 
 
-void evaluate (string *command, vector<vector<string> > *parsed_segments, bool *cont){
+void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	return;
 }
 
