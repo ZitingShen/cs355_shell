@@ -137,7 +137,6 @@ void kill(vector<string> argv){
 	int signo = SIGTERM;
 	unsigned int i = 1;
 	if (argv[1].compare("-9") == 0){
-		cout << "flag found" << endl;
 		signo = SIGKILL;
 		i++;
 	}
@@ -146,7 +145,6 @@ void kill(vector<string> argv){
 		/* check if pid or jid */
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
-				cout << "trying kill by jid" << endl;
 				if (!joblist.find_jid(stoi(argv[i].substr(1, string::npos)))){
 					cerr << "Job " << argv[i].substr(1, string::npos) << " does not exist!" << endl;
 					continue;
@@ -154,7 +152,6 @@ void kill(vector<string> argv){
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1, string::npos)));
 			}
         	else{ //then is pid
-        		cout << "trying kill by pid" << endl;
         		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(cur_pid)){
         			cerr << "Job with pid " << argv[i] << "does not exist" << endl;

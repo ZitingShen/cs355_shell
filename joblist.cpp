@@ -53,19 +53,27 @@ int joblist_t::remove_pid(pid_t pid) {
 }
 
 void joblist_t::remove_terminated_jobs() {
+	int status;
 	for (list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		if(it->status == DN) {
+		if(it->status == DNBG) {
+			waitpid(it->pids[0], &status, 0);
 			#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tDone\t" 
 				<< it->cmdline << endl;
 			#endif
 			it = remove_helper(it);
-		}
-		if(it->status == TN) {
+		}else if(it->status == DNFG) {
+			#if (DEBUG)
+				cout << "[" << it->jid << "] (" << it->pid << ")\tDone\t" 
+				<< it->cmdline << endl;
+			#endif
+			it = remove_helper(it);
+		} else if(it->status == TN) {
+			waitpid(it->pids[0], &status, 0);
 			#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tTerminated\t" 
 				<< it->cmdline << endl;
-				#endif
+			#endif
 			it = remove_helper(it);
 		}
 	}
@@ -128,8 +136,12 @@ void joblist_t::listjobs() {
 				     << it->cmdline << endl << flush;
 				break;
 			#if (DEBUG)
-			case DN:
-				cout << '[' << it->jid << "]" << '\t' << "Done\t\t\t"
+			case DNFG:
+				cout << '[' << it->jid << "]" << '\t' << "Done (fg)\t\t\t"
+					 << it->cmdline << endl << flush;
+				break;
+			case DNBG:
+				cout << '[' << it->jid << "]" << '\t' << "Done (bg)\t\t\t"
 					 << it->cmdline << endl << flush;
 				break;
 			case TN:
