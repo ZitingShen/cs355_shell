@@ -96,8 +96,28 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		signal(SIGTTOU, SIG_DFL);
 
 		if (execvp(argvc[0], argvc) < 0){
-			// TODO: print different error message depending on errno.
-			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
+			switch(errno) {
+				case E2BIG:
+					cerr << argvc[0] << ": argument list too long" << endl;
+					break;
+				case EACCES:
+					cerr << argvc[0] << ": permission denied" << endl;
+					break;
+				case EAGAIN:
+					cerr << argvc[0] << ": resource temporarily unavailable" << endl;
+					break;
+				case EFAULT:
+				case EINTR:
+				case ELOOP:
+				case ENAMETOOLONG:
+				case ENOENT:
+				case ENOLINK:
+				case ENOTDIR:
+				case ENOEXEC:
+				case ENOMEM:
+				case ETXTBSY:
+				default:;
+			}
 			for(unsigned int i = 0; i < argv.size()+1; i++) {
     			delete[] argvc[i];
   			}
@@ -128,14 +148,14 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
 			if (WIFSTOPPED(status)){ //store child termio if stopped
-				if (!joblist.find_pid(pid)){
+				if (joblist.find_pid(pid)){
+					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
+						cerr << "termio of stopped job not saved" << endl; 
+					}
+				} else {
 					cerr << "No such process with process id " << pid << endl;
-					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
-					return true;
 				}
-				if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
-					cerr << "termio of stopped job not saved" << endl; 
-				}
+				
 			}
 		}
 	}
