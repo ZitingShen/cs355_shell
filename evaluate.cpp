@@ -165,8 +165,8 @@ bool kill(vector<string> argv){
 		return false;
 	}
 
-	if (argv[1].compare("-9") == 0){
-		signo = SIGKILL;
+	if (argv[1][0] == '-'){
+		signo = stoi(argv[i].substr(1);
 		i++;
 	}
 
