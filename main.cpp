@@ -4,43 +4,36 @@
 #include "handle_signal.h"
 #include "joblist.h"
 #include "parse.h"
+#define shell_terminal STDIN_FILENO
+
 
 using namespace std;
 
 struct joblist_t joblist;
-pid_t shell_pgid;
 struct termios shell_tmodes;
+pid_t shell_pid;
 
 int main(int argc, char **argv) {
+  tcgetattr (shell_terminal, &shell_tmodes);
+  shell_pid = getpid();
   char *cmdline;
-  struct sigaction sa_sigchld, sa_sigint;
+  struct sigaction sa_sigchld;
 
-  // register signal handler for SIGCHLD and SIGINT using sigaction
+  // register signal handler for SIGCHLD sigaction
   sa_sigchld.sa_sigaction = &sigchld_handler;
   sigemptyset(&sa_sigchld.sa_mask);
-  sa_sigchld.sa_flags = SA_SIGINFO;
+  sa_sigchld.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
   if (sigaction(SIGCHLD, &sa_sigchld, 0) == -1) {
     cerr << "Failed to register SIGCHLD" << endl;
     exit(EXIT_FAILURE);
   }
 
-  sa_sigint.sa_sigaction = &sigint_handler;
-  sigemptyset(&sa_sigint.sa_mask);
-  sa_sigint.sa_flags = SA_SIGINFO;
-  if (sigaction(SIGINT, &sa_sigint, 0) == -1) {
-    cerr << "Failed to register SIGINT" << endl;
-    exit(EXIT_FAILURE);
-  }  
-
-  // mask SIGSTOP and other signals for the main process
-  sigset_t masked_signals;
-  sigemptyset(&masked_signals);
-  sigaddset(&masked_signals, SIGTSTP);
-  sigaddset(&masked_signals, SIGTERM);
-  sigaddset(&masked_signals, SIGTTIN);
-  sigaddset(&masked_signals, SIGTTOU);
-  sigaddset(&masked_signals, SIGQUIT);
-  sigprocmask(SIG_BLOCK, &masked_signals, NULL);
+  signal(SIGINT, sigint_handler);
+  signal(SIGTSTP, SIG_IGN);
+  signal(SIGTERM, SIG_IGN);
+  signal(SIGTTIN, SIG_IGN);
+  signal(SIGTTOU, SIG_IGN);
+  signal(SIGQUIT, SIG_IGN);
 
   /* Set previous directory to current directory */
   string prevDir = getenv("PWD");
@@ -54,7 +47,7 @@ int main(int argc, char **argv) {
     joblist.remove_terminated_jobs();
     
     cmdline = readline("Thou shell not crash> ");
-    
+
     if (cmdline == NULL) { /* End of file (ctrl-d) */
       cout << endl;
       exit(EXIT_SUCCESS);

@@ -2,6 +2,7 @@
 #define EVALUATE_H_
 
 #include <signal.h>
+#include <stdlib.h>
 #include <string>
 #include <cstring>
 #include <vector>
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <readline/history.h>
 
 
 #include "joblist.h"

@@ -17,7 +17,7 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused);
 /* SIGINT_handler 
 	rl_forced_update_display(); to print new prompt
 	*/
-void sigint_handler(int sig, siginfo_t *sip, void *notused);
+void sigint_handler(int sig);
 
 #endif
 

@@ -8,6 +8,7 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <sys/wait.h>
 
 using namespace std;
 
@@ -18,11 +19,12 @@ using namespace std;
  *    ST        -> FG       : fg command
  *    ST        -> BG       : bg command
  *    BG        -> FG       : fg command
- *    BG        -> DN       : background process exit
+ *    FG        -> DNFG     : foreground process exit
+ *    BG        -> DNBG     : background process exit
  *    BG/FG/ST  -> TN       : ctrl-c/kill
  */
 
-enum job_status {BG, FG, ST, DN, TN}; //foreground done???!!!
+enum job_status {BG, FG, ST, DNFG, DNBG, TN}; //foreground done???!!!
 
 struct job_t {
 	int jid; //job id
