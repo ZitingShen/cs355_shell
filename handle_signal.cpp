@@ -12,7 +12,6 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	//int exit_status = sip->si_status;
 	int exit_code = sip->si_code;
 	pid_t pid = sip->si_pid;
-	cout << "handler: " << pid << " " << exit_code << endl;
 	if (exit_code == CLD_EXITED){
 		if(joblist.find_pid(pid)->status == BG) {
 			//cout << "DNBG" << endl;
