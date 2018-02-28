@@ -47,6 +47,9 @@ bool evaluate(string *command, vector<vector<string>> *parsed_segments);
 // return false if execvp fails, true otherwise.
 bool no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
 
+// return false if execvp fails, true otherwise.
+bool pipe_exec (string *command, vector<vector<string>> *parsed_segments, enum job_status bg_fg);
+
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 
 For each pid in the list, check whether it is valid pid of a suspended job in joblist (error if not). Then resume

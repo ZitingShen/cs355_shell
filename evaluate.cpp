@@ -9,19 +9,18 @@ using namespace std;
 
 void handle_error(string exec);
 
-bool evaluate (string *command, vector<vector<string> > *parsed_segments){
+bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
 	bool cont = true;
 	int len = parsed_segments->size();
 	enum job_status bg_fg = FG; //default as FG
-	vector<string> last_seg = parsed_segments->back();
+	vector<string> last_seg = (*parsed_segments)[0];
 
 	/* No pipe!!*/
 	if (len == 1){
-		string cmd; //get the command
-		cmd = last_seg.front();
-		if (built_in_commands.count(cmd) == 1){ //if first argument is buildin comment
+		string cmd = last_seg.front();
+		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
 			if(cmd.compare("kill") == 0) {
 				return kill(last_seg);
 			} 
@@ -49,8 +48,69 @@ bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 		}
 	}
 	/* Pipe exists!!*/
-	else{ 
-		string inter_result;
+	else{
+		pid_t pid;
+		sigset_t signalSet;  
+		sigemptyset(&signalSet);
+		sigaddset(&signalSet, SIGCHLD);
+
+		/* Block SIGCHLD signal while fork(), setpgid and add joblist */  
+		sigprocmask(SIG_BLOCK, &signalSet, NULL);
+		/*fork*/
+		if ((pid = fork()) < 0 ){
+			cerr << "Failed to fork child process at process " << getpid() << endl;
+		}
+
+		if (pid == 0){
+			if (setpgid(0, 0) < 0){
+				cerr << "Failed to set new group" << endl;
+			}
+			
+			/*unmask SIGCHLD*/
+			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+			signal(SIGCHLD, SIG_DFL);
+			signal(SIGINT, SIG_DFL);
+			signal(SIGTSTP, SIG_DFL);
+			signal(SIGTERM, SIG_DFL);
+			signal(SIGTTIN, SIG_DFL);
+			signal(SIGQUIT, SIG_DFL);
+
+			tcsetpgrp(shell_terminal, getpid());
+
+			signal(SIGTTOU, SIG_DFL);
+
+			cont = pipe_exec(command, parsed_segments, bg_fg);
+  			return false;
+		} else{ //parent process
+			/*update joblist*/
+			joblist.add(pid, FG, *command, (*parsed_segments)[0][0]);
+
+			if(setpgid(pid, pid) < 0) {
+				cerr << pid << ": failed to set new group"<<endl;
+			}
+		
+			/*unmask signals*/
+			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+			tcsetpgrp(shell_terminal, pid);
+
+			int status;
+			waitpid(pid, &status, WUNTRACED);
+
+			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
+
+			if (WIFSTOPPED(status)){ //store child termio if stopped
+				if (joblist.find_pid(pid)){
+					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
+						cerr << "termios of stopped job not saved" << endl; 
+					}
+				} else {
+					cerr << pid << " not found in the joblist" << endl;
+				}
+			}
+		}
 	}
 	return cont;
 }
@@ -107,7 +167,6 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
   			delete[] argvc;
   			return false;
 		}
-
 	}
 	else{ //parent process
 		/*update joblist*/
@@ -215,7 +274,7 @@ bool bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
 	int cur_jid;
-	if (argv.size() < 2){
+	if(argv.size() < 2) {
 		cerr << "bg: current: no such job" << endl;
 		return true;
 	}
@@ -231,8 +290,8 @@ bool bg(vector<string> argv){
       	job_t *target_job;
 		try {
 			cur_jid = stoi(s_cur_jid);
-			target_job = joblist.find_jid(cur_jid)
-      	} catch (exception &e){
+			target_job = joblist.find_jid(cur_jid);
+      	} catch (exception &e) {
       		if(joblist.find_exec(argv[i])) {
       			target_job = joblist.find_unique_exec(argv[i]);
       			if(!target_job) {
@@ -245,7 +304,7 @@ bool bg(vector<string> argv){
       		}
     	}
 
-    	if (!target_job){
+    	if(!target_job) {
 			cerr << "bg: "<< argv[i] << ": no such job" << endl;
 			continue;
 		}
@@ -445,5 +504,11 @@ void handle_error(string exec) {
 		default:
 			cerr << exec << ": error" << endl;
 			break;
+	}
+}
+
+bool pipe_exec (string *command, vector<vector<string>> *parsed_segments, enum job_status bg_fg) {
+	for(unsigned int i = 0; i < parsed_segments->size(); i++) {
+
 	}
 }
