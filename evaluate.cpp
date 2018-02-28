@@ -11,6 +11,7 @@ using namespace std;
 bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
+	bool cont = true;
 	int len = parsed_segments->size();
 	enum job_status bg_fg = FG; //default as FG
 	vector<string> last_seg = parsed_segments->back();
@@ -40,18 +41,18 @@ bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 				bg_fg = BG;
 				last_seg.pop_back();
 			}
-			no_pipe_exec(command, last_seg, bg_fg);
+			cont = no_pipe_exec(command, last_seg, bg_fg);
 		}
 	}
 	/* Pipe exists!!*/
 	else{ 
 		string inter_result;
 	}
-	return true;
+	return cont;
 }
 
 
-void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
+bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 	pid_t pid;
 	sigset_t signalSet;  
   	sigemptyset(&signalSet);
@@ -97,6 +98,11 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
+			for(unsigned int i = 0; i < argv.size()+1; i++) {
+    			delete[] argvc[i];
+  			}
+  			delete[] argvc;
+  			return false;
 		}
 
 	}
@@ -149,7 +155,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 (4) -9 flag can only be at the second argument, otherwise -9 will be recognized as a job number
 */
 void kill(vector<string> argv){
-
 	pid_t cur_pid;
 	int signo = SIGTERM;
 	unsigned int i = 1;

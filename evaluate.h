@@ -44,7 +44,8 @@ return false if the shell should exit, true otherwise.
 */
 bool evaluate(string *command, vector<vector<string>> *parsed_segments);
 
-void no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
+// return false if execvp fails, true otherwise.
+bool no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
 
 /*
 bg() takes in pointer to a list of pids/gpids (as integers). 
