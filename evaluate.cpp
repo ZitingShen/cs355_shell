@@ -131,14 +131,12 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 				if (!joblist.find_pid(pid)){
 					cerr << "No such process with process id " << pid << endl;
 					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
-					return;
+					return true;
 				}
 				if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
 					cerr << "termio of stopped job not saved" << endl; 
 				}
 			}
-
-			
 		}
 	}
 
@@ -146,6 +144,7 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
     	delete[] argvc[i];
   	}
   	delete[] argvc;
+  	return true;
 }
 
 /*
