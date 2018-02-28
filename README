@@ -13,4 +13,4 @@ Extra features:
 2. history
 3.  a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the 
        joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
-	b. Also, will print out "Ambiguous name!" if more than one job starts with the given command string.
+	b. Also, will print out "bg: sleep: ambiguous job spec" if more than one job starts with the given command string.

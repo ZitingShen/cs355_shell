@@ -161,8 +161,8 @@ bool kill(vector<string> argv){
 	int signo = SIGTERM;
 	unsigned int i = 1;
 	if (argv.size() < 2){
-		cerr << "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]" << endl;
-		return false;
+		cerr << "kill: usage: kill pid | jobid ... or kill -9 pid | jobid" << endl;
+		return true;
 	}
 
 	if (argv[1][0] == '-'){
@@ -175,7 +175,7 @@ bool kill(vector<string> argv){
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
 				if (!joblist.find_jid(stoi(argv[i].substr(1)))){
-					cerr << argv[0] << ": " << argv[i] << ": no such job" << endl;
+					cerr << "kill: "  << argv[i] << " arguments must be process or job IDs" << endl;
 					continue;
 				}
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1)));
@@ -183,13 +183,13 @@ bool kill(vector<string> argv){
         	else{ //then is pid
         		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(cur_pid)){
-        			cerr << argv[0] << ": (" << argv[i] << "): no such process" << endl;
+        			cerr << "kill: "  << argv[i] << " arguments must be process or job IDs" << endl;
         			continue;
         		}
         		
         	}
     	} catch (exception &e){
-    		cerr << argv[0] << ": " << argv[i] << ": arguments must be process or job IDs" << endl;
+    		cerr << "kill: "  << argv[i] << " arguments must be process or job IDs" << endl;
     		continue; //continue to the next iteration
    		}
 
@@ -197,7 +197,7 @@ bool kill(vector<string> argv){
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check pgid
 		if (kill(-cur_pid, signo) > 0){
-			cerr << argv[0] << ": job " << joblist.pid2jid(cur_pid) << "failed to be killed" << endl;
+			cerr << ": job " << "kill: "  << argv[i] << "failed to be killed" << endl;
 		}
 	}
 	return true;
@@ -263,7 +263,7 @@ bool bg(vector<string> argv){
 			else if (joblist.find_pid(cur_pid)->status != DNBG || joblist.find_pid(cur_pid)->status != DNFG){
 				err_mes = "been done!";
 			}
-			cerr << "bg: current: " << argv[i] << " job has " << err_mes << "." << endl;
+			cerr << "bg: current: " << argv[i] << " job has " << err_mes << endl;
 		}
 	}
 	return true;
