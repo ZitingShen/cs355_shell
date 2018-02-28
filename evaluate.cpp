@@ -205,6 +205,10 @@ void bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
 	pid_t cur_pid;
+	if (argv.size() < 2){
+		cerr << "You must enter at least one job ID as argument!!!" << endl;
+		return;
+	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
 
