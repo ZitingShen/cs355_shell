@@ -163,6 +163,11 @@ void kill(vector<string> argv){
 	pid_t cur_pid;
 	int signo = SIGTERM;
 	unsigned int i = 1;
+	if (argv.size() < 2){
+		cerr << "You must enter at least one pid or job ID as argument!!" << endl;
+		return;
+	}
+
 	if (argv[1].compare("-9") == 0){
 		signo = SIGKILL;
 		i++;
