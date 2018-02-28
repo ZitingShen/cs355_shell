@@ -88,7 +88,10 @@ int main(int argc, char **argv) {
         
         // hand processed segments to evaluate
         evaluate(&command, &parsed_segments);
+        vector<string>().swap(segments);
+        vector<vector<string>>().swap(parsed_segments);
       }
+      vector<string>().swap(commands);
     }
   }
 }

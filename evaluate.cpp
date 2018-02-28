@@ -48,6 +48,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	else{ 
 		string inter_result;
 	}
+	built_in_commands.clear();
 	return;
 }
 
@@ -97,6 +98,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 		signal(SIGTTOU, SIG_DFL);
 
+		vector<string>().swap(argv);
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
@@ -146,7 +148,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
     	delete[] argvc[i];
   	}
   	delete[] argvc;
-  	
+  	vector<string>().swap(argv);
 }
 
 /*
@@ -195,6 +197,7 @@ void kill(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
+	vector<string>().swap(argv);
 }
 
 
@@ -239,7 +242,7 @@ void bg(vector<string> argv){
     	/*only send sigcont when job is ST*/
 		if (joblist.find_pid(cur_pid) -> status == ST){
 			cur_pid = getpgid(cur_pid); //just to double check
-			if (kill (- cur_pid, SIGCONT) < 0){ //let job continue
+			if (kill (-cur_pid, SIGCONT) < 0){ //let job continue
 				cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
 				continue;
 			}
@@ -249,6 +252,7 @@ void bg(vector<string> argv){
 			cerr << "Job " << s_cur_jid << "cannot continue in background, you can only bg a ST or BG job!" << endl;
 		}
 	}
+	vector<string>().swap(argv);
 }
 
 /*
@@ -296,7 +300,7 @@ void fg(vector<string> argv){
 
 	/* if job is ST or BG */
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
-		if (kill (- pid, SIGCONT) < 0){ //let job continue
+		if (kill (-pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 			return;
 		}
@@ -311,7 +315,7 @@ void fg(vector<string> argv){
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to restore termio setting, will continue in BG!" << endl;
-			tcsetpgrp (shell_terminal, shell_pid); //bring shell to fg
+			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 			return;
 			}
 		}
@@ -337,6 +341,7 @@ void fg(vector<string> argv){
 	else{
 		cerr << "Job " << argv[1] << "can not be brought to foreground since it is neither ST nor BG!" << endl;
 	}
+	vector<string>().swap(argv);
 }
 
 
@@ -367,4 +372,5 @@ void history(vector<string> argv) {
 		i < history_base + history_length; i++) {
 		cout <<  i << " " << history_get(i)->line << endl;
 	}
+	vector<string>().swap(argv);
 }
