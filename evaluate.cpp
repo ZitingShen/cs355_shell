@@ -110,7 +110,8 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 	else{ //parent process
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
-		cout << "job added" << endl;
+		//cout << "job added" << endl;
+		
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
