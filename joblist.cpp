@@ -53,30 +53,37 @@ int joblist_t::remove_pid(pid_t pid) {
 }
 
 void joblist_t::remove_terminated_jobs() {
+	pid_t pid;
 	int status;
 	for (list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		if(it->status == DNBG) {
-			waitpid(it->pids[0], &status, 0);
-			#if (DEBUG)
+		switch(it->status) {
+			case DNBG:
+				waitpid(it->pids[0], &status, 0);
+				#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tDone\t" 
-				<< it->cmdline << endl;
-			#endif
-			it = remove_helper(it);
-		}else if(it->status == DNFG) {
-			#if (DEBUG)
+					<< it->cmdline << endl;
+				#endif
+				it = remove_helper(it);
+				break;
+			case DNFG:
+				#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tDone\t" 
-				<< it->cmdline << endl;
-			#endif
-			it = remove_helper(it);
-		} else if(it->status == TN) {
-			waitpid(it->pids[0], &status, 0);
-			#if (DEBUG)
+					<< it->cmdline << endl;
+				#endif
+				it = remove_helper(it);
+				break;
+			case TN:
+				waitpid(it->pids[0], &status, 0);
+				#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tTerminated\t" 
-				<< it->cmdline << endl;
-			#endif
-			it = remove_helper(it);
+					<< it->cmdline << endl;
+				#endif
+				it = remove_helper(it);
+			default:;
 		}
 	}
+	while((pid = waitpid(-1, &status, WNOHANG)) > 1)
+		remove_pid(pid);
 }
 
 job_t *joblist_t::find_jid(int jid) {
@@ -124,6 +131,10 @@ int joblist_t::pid2jid(pid_t pid) {
 }
 
 void joblist_t::listjobs() {
+	pid_t pid;
+	int status;
+	while((pid = waitpid(-1, &status, WNOHANG)) > 1)
+		remove_pid(pid);
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		switch(it->status) {
 			case BG:

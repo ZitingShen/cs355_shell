@@ -8,34 +8,31 @@ extern pid_t shell_pid;
 
 using namespace std;
 
-
-void evaluate (string *command, vector<vector<string> > *parsed_segments){
-	
+bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
-	int len = parsed_segments -> size();
+	int len = parsed_segments->size();
 	enum job_status bg_fg = FG; //default as FG
-	vector<string> last_seg = parsed_segments -> back();
+	vector<string> last_seg = parsed_segments->back();
 
 	/* No pipe!!*/
 	if (len == 1){
 		string cmd; //get the command
 		cmd = last_seg.front();
 		if (built_in_commands.count(cmd) == 1){ //if first argument is buildin comment
-			if (cmd.compare("kill") == 0){
+			if(cmd.compare("kill") == 0) {
 				kill(last_seg);
-			}
-			else if(cmd.compare("bg") == 0){
+			} else if(cmd.compare("bg") == 0) {
 				bg(last_seg);
-			}
-			else if(cmd.compare("fg") == 0){
+			} else if(cmd.compare("fg") == 0) {
 				fg(last_seg);
-			}
-			else if(cmd.compare("jobs") == 0){
+			} else if(cmd.compare("jobs") == 0) {
 				jobs();
 			}
-			else if(cmd.compare("exit") == 0){
-				exit(EXIT_SUCCESS);
+			else if(cmd.compare("history") == 0) {
+				history(last_seg);
+			} else if(cmd.compare("exit") == 0) {
+				return false;
 			}
 		}
 		else{//not built_in
@@ -46,12 +43,11 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
 	}
-
 	/* Pipe exists!!*/
-	else{//pipe exist
+	else{ 
 		string inter_result;
 	}
-	return;
+	return true;
 }
 
 
@@ -72,7 +68,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
   	/* Block SIGCHLD signal while fork(), setpgid and add joblist */  
   	sigprocmask(SIG_BLOCK, &signalSet, NULL);
-
   	/*fork*/
   	if ((pid = fork()) < 0 ){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
@@ -82,10 +77,10 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		if (setpgid(0, 0) < 0){
 			cerr << "Failed to set new group" << endl;
 		}
-		
+
 		/*unmask SIGCHLD*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
+		
 		signal(SIGCHLD, SIG_DFL);
 		signal(SIGINT, SIG_DFL);
 		signal(SIGTSTP, SIG_DFL);
@@ -95,7 +90,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 		if (bg_fg == FG){ 
   			tcsetpgrp(shell_terminal, getpid());
-  			//tcgetattr(shell_terminal, &shell_tmodes);
   		}
 
 		signal(SIGTTOU, SIG_DFL);
@@ -110,23 +104,20 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
 
-		/*unmask signals*/
-		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
 		if (setpgid(pid, pid) < 0){
 			cerr<< "Failed to set new group"<<endl;
 		}
-
-		if (bg_fg == FG){ 
-  			tcsetpgrp(shell_terminal, pid);
-  		} 
-
-		int status;
+		/*unmask signals*/
+		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
 		//do nothing if bg, will clean up in the next loop.
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
+			tcsetpgrp(shell_terminal, pid);
+
+			int status;
 			waitpid(pid, &status, WUNTRACED);
+
 			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
@@ -136,7 +127,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 					return;
 				}
-				if (tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter) < 0){
+				if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
 					cerr << "termio of stopped job not saved" << endl; 
 				}
 			}
@@ -149,7 +140,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
     	delete[] argvc[i];
   	}
   	delete[] argvc;
-  	
 }
 
 /*
@@ -245,15 +235,15 @@ void bg(vector<string> argv){
 		}
 
     	/*only send sigcont when job is ST*/
-		if (joblist.find_pid(cur_pid) -> status == ST){
+		if (joblist.find_pid(cur_pid)->status == ST){
 			cur_pid = getpgid(cur_pid); //just to double check
-			if (kill (- cur_pid, SIGCONT) < 0){ //let job continue
+			if (kill (-cur_pid, SIGCONT) < 0){ //let job continue
 				cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
 				continue;
 			}
-			joblist.find_pid(cur_pid) -> status = BG;
+			joblist.find_pid(cur_pid)->status = BG;
 		}
-		else if (joblist.find_pid(cur_pid) -> status != BG){
+		else if (joblist.find_pid(cur_pid)->status != BG){
 			cerr << "Job " << s_cur_jid << "cannot continue in background, you can only bg a ST or BG job!" << endl;
 		}
 	}
@@ -304,7 +294,7 @@ void fg(vector<string> argv){
 
 	/* if job is ST or BG */
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
-		if (kill (- pid, SIGCONT) < 0){ //let job continue
+		if (kill (-pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
 			return;
 		}
@@ -319,7 +309,7 @@ void fg(vector<string> argv){
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to restore termio setting, will continue in BG!" << endl;
-			tcsetpgrp (shell_terminal, shell_pid); //bring shell to fg
+			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 			return;
 			}
 		}
@@ -350,4 +340,29 @@ void fg(vector<string> argv){
 
 void jobs(){
 	joblist.listjobs();
+}
+
+void history(vector<string> argv) {
+	int n = history_length;
+	if (argv.size() > 2) {
+		cout << "history: too many arguments" << endl;
+		return;
+	}
+	if (argv.size() == 2) {
+		try {
+			n = stoi(argv[1]);
+		} catch(exception &e) {
+			cout << "Usage: history [n]" << endl;
+			return;
+		}
+		if (n < 0) {
+			cout << "Usage: history [n]" << endl;
+			return;
+		}
+		if (n > history_length) n = history_length;
+	}
+	for (int i = history_base + history_length - n; 
+		i < history_base + history_length; i++) {
+		cout <<  i << " " << history_get(i)->line << endl;
+	}
 }

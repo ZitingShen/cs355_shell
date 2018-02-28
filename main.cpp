@@ -17,9 +17,10 @@ int main(int argc, char **argv) {
   tcgetattr (shell_terminal, &shell_tmodes);
   shell_pid = getpid();
   char *cmdline;
-  struct sigaction sa_sigchld;
+  bool cont = true;
 
   // register signal handler for SIGCHLD sigaction
+  struct sigaction sa_sigchld;
   sa_sigchld.sa_sigaction = &sigchld_handler;
   sigemptyset(&sa_sigchld.sa_mask);
   sa_sigchld.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
@@ -35,22 +36,20 @@ int main(int argc, char **argv) {
   signal(SIGTTOU, SIG_IGN);
   signal(SIGQUIT, SIG_IGN);
 
-  /* Set previous directory to current directory */
-  string prevDir = getenv("PWD");
-
   // configure readline to auto-complete paths when the tab key is hit
   rl_bind_key('\t', rl_complete);
 
   using_history();
 
-  while(true) {
+  while(cont) {
     joblist.remove_terminated_jobs();
     
     cmdline = readline("Thou shell not crash> ");
 
     if (cmdline == NULL) { /* End of file (ctrl-d) */
       cout << endl;
-      exit(EXIT_SUCCESS);
+      cont = false;
+      continue;
     }
 
     // check for history expansion
@@ -87,7 +86,7 @@ int main(int argc, char **argv) {
         vector<vector<string>> parsed_segments = parse_segments(&segments);
         
         // hand processed segments to evaluate
-        evaluate(&command, &parsed_segments);
+        cont = evaluate(&command, &parsed_segments);
       }
     }
   }
