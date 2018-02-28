@@ -7,44 +7,26 @@ extern pid_t shell_pid;
 
 using namespace std;
 
-void handle_error(string exec);
-
 bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
 	bool cont = true;
 	int len = parsed_segments->size();
 	enum job_status bg_fg = FG; //default as FG
-	vector<string> last_seg = (*parsed_segments)[0];
+	vector<string> first_seg = (*parsed_segments)[0];
 
 	/* No pipe!!*/
 	if (len == 1){
-		string cmd = last_seg.front();
+		string cmd = first_seg.front();
 		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
-			if(cmd.compare("kill") == 0) {
-				return kill(last_seg);
-			} 
-			else if(cmd.compare("bg") == 0) {
-				return bg(last_seg);
-			} 
-			else if(cmd.compare("fg") == 0) {
-				return fg(last_seg);
-			} 
-			else if(cmd.compare("jobs") == 0) {
-				return jobs();
-			}
-			else if(cmd.compare("history") == 0) {
-				return history(last_seg);
-			} else if(cmd.compare("exit") == 0) {
-				return false;
-			}
+			return built_in_exec(first_seg);
 		}
 		else{//not built_in
-			if (last_seg.back().compare("&") == 0){ //check whether background or foreground
+			if (first_seg.back().compare("&") == 0){ //check whether background or foreground
 				bg_fg = BG;
-				last_seg.pop_back();
+				first_seg.pop_back();
 			}
-			cont = no_pipe_exec(command, last_seg, bg_fg);
+			cont = no_pipe_exec(command, first_seg, bg_fg);
 		}
 	}
 	/* Pipe exists!!*/
@@ -207,6 +189,24 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
   	}
   	delete[] argvc;
   	return true;
+}
+
+bool built_in_exec(vector<string> argv) {
+	string cmd = argv.front();
+	if(cmd.compare("kill") == 0) {
+		return kill(argv);
+	} else if(cmd.compare("bg") == 0) {
+		return bg(argv);
+	} else if(cmd.compare("fg") == 0) {
+		return fg(argv);
+	} else if(cmd.compare("jobs") == 0) {
+		return jobs();
+	} else if(cmd.compare("history") == 0) {
+		return history(argv);
+	} else if(cmd.compare("exit") == 0) {
+		return false;
+	}
+	return true;
 }
 
 /*
