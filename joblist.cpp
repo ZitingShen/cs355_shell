@@ -131,6 +131,10 @@ int joblist_t::pid2jid(pid_t pid) {
 }
 
 void joblist_t::listjobs() {
+	pid_t pid;
+	int status;
+	while((pid = waitpid(-1, &status, WNOHANG)) > 1)
+		remove_pid(pid);
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		switch(it->status) {
 			case BG:
