@@ -2,19 +2,20 @@
 
 using namespace std;
 
-job_t::job_t(int jid, vector<pid_t> pids, job_status status, string cmdline) {
+job_t::job_t(int jid, vector<pid_t> pids, job_status status, string cmdline, string exec) {
 	this->jid = jid;
 	this->pids = pids;
 	this->status = status;
 	this->cmdline = cmdline;
+	this->exec = exec;
 }
 
-int joblist_t::add(pid_t pid, job_status status, string cmdline) {
+int joblist_t::add(pid_t pid, job_status status, string cmdline, string exec) {
 	if(pid < 1) return -1;
 
 	vector<pid_t> pids;
 	pids.push_back(pid);
-	jobs.emplace(jobs.end(), next_jid, pids, status, cmdline);
+	jobs.emplace(jobs.end(), next_jid, pids, status, cmdline, exec);
 	next_jid++;
 	return 0;
 }
@@ -103,6 +104,29 @@ job_t *joblist_t::find_pid(pid_t pid) {
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		if(find(it->pids.begin(), it->pids.end(), pid) != it->pids.end()) {
 			return &(*it);
+		}
+	}
+	return NULL;
+}
+
+job_t *joblist_t::find_exec(string exec) {
+	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
+		if(it->exec == exec) {
+			return &(*it);
+		}
+	}
+	return NULL;
+}
+
+job_t *joblist_t::find_unique_exec(string exec) {
+	job_t *result = NULL;
+	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
+		if(it->exec == exec) {
+			if(result == NULL) {
+				result = &(*it);
+			} else {
+				return NULL;
+			}
 		}
 	}
 	return NULL;

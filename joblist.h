@@ -31,9 +31,10 @@ struct job_t {
 	vector<pid_t> pids;
 	job_status status;
 	string cmdline;
+	string exec;
 	struct termios ter;
 
-	job_t(int jid, vector<pid_t> pids, job_status status, string cmdline); /* constructor */
+	job_t(int jid, vector<pid_t> pids, job_status status, string cmdline, string exec); /* constructor */
 };
 
 struct joblist_t {
@@ -41,7 +42,7 @@ struct joblist_t {
 	list<job_t> jobs;
 
 	// return 0 on success, -1 on failure
-	int add(pid_t pid, job_status status, string cmdline);
+	int add(pid_t pid, job_status status, string cmdline, string exec);
 	int remove_jid(int jid);
 	int remove_pid(pid_t pid);
 
@@ -49,8 +50,10 @@ struct joblist_t {
 	void remove_terminated_jobs();
 
 	// return NULL on failure
-	struct job_t *find_jid(int jid);
-	struct job_t *find_pid(pid_t pid);
+	job_t *find_jid(int jid);
+	job_t *find_pid(pid_t pid);
+	job_t *find_exec(string exec);
+	job_t *find_unique_exec(string exec);
 
 	// return -1 on failure
 	pid_t jid2pid(int jid);

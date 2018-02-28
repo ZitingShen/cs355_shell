@@ -111,7 +111,7 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 	}
 	else{ //parent process
 		/*update joblist*/
-		joblist.add(pid, bg_fg, *command);
+		joblist.add(pid, bg_fg, *command, argv[0]);
 
 		if (setpgid(pid, pid) < 0){
 			cerr << pid << ": failed to set new group"<<endl;
@@ -178,7 +178,7 @@ bool kill(vector<string> argv){
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
 				if (!joblist.find_jid(stoi(argv[i].substr(1)))){
-					cerr << "kill: "  << argv[i] << " arguments must be process or job IDs" << endl;
+					cerr << "kill: " << argv[i] << " arguments must be process or job IDs" << endl;
 					continue;
 				}
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1)));
@@ -215,55 +215,48 @@ bool kill(vector<string> argv){
 bool bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
-	pid_t cur_pid;
+	int cur_jid;
 	if (argv.size() < 2){
 		cerr << "bg: current: no such job" << endl;
 		return true;
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
-
-		/*check whether there is %*/
 		if ( argv[i][0] == '%') {
-      		s_cur_jid = argv[i].substr(1, string::npos);
+      		s_cur_jid = argv[i].substr(1);
       	} 
       	else {
       		s_cur_jid = argv[i];
       	}
 
-      	/*convert jid into pid*/
 		try {
-			//check whether pid is valid?
-			if (!joblist.jid2pid(stoi(s_cur_jid))){
-				cerr << "bg: current: " << argv[i] << " no such job" << endl;
-				continue;
-			}
-        	cur_pid = joblist.jid2pid(stoi(s_cur_jid));
+			cur_jid = stoi(s_cur_jid);
       	} catch (exception &e){
     		cerr << "bg: current: " << argv[i] << " no such job"<< endl;
-    		continue; //continue to the next iteration
+    		continue;
     	}
 
-    	if (!joblist.find_pid(cur_pid)){
+    	job_t *target_job = joblist.find_jid(cur_jid);
+    	if (!target_job){
 			cerr << "bg: current: "<< argv[i] << " no such job" << endl;
 			continue;
 		}
 
     	/*only send sigcont when job is ST*/
-		if (joblist.find_pid(cur_pid)->status == ST){
-			cur_pid = getpgid(cur_pid); //just to double check
-			if (kill (-cur_pid, SIGCONT) < 0){ //let job continue
+		if (target_job->status == ST){
+			pid_t cur_pid = target_job->pids[0];
+			if (kill(-cur_pid, SIGCONT) < 0){
 				cerr << "bg: current: " << argv[i] << " failed to continue in background!" << endl;
 				continue;
 			}
-			joblist.find_pid(cur_pid)->status = BG;
+			target_job->status = BG;
 		}
-		else if (joblist.find_pid(cur_pid)->status != BG){
+		else if (target_job->status != BG){
 			string err_mes = " ";
-			if (joblist.find_pid(cur_pid)->status != TN){
+			if (target_job->status != TN){
 				err_mes = "terminated!";
 			}
-			else if (joblist.find_pid(cur_pid)->status != DNBG || joblist.find_pid(cur_pid)->status != DNFG){
+			else if (target_job->status != DNBG || target_job->status != DNFG){
 				err_mes = "been done!";
 			}
 			cerr << "bg: current: " << argv[i] << " job has " << err_mes << endl;
@@ -277,79 +270,68 @@ bool bg(vector<string> argv){
 (2) argument can be any size, but only argv[1] will be take into fg, other will be ignored.
 (3) job number can be without % */
 bool fg(vector<string> argv){
-	pid_t pid;
-	//sigset_t masked_signals;
-  	
+	int jid;
+
 	/*check argv size*/
 	if (argv.size() < 2){
 		cerr << "fg: current: no such job" << endl;
 		return true;
 	}
 
-	/*convert string to int and then jid to pid*/
+	/*convert argument to jid*/
 	try {
       if (argv[1][0] == '%') {
-      	//check whether pid is valid?
-      	if (!joblist.jid2pid(stoi(argv[1].substr(1, string::npos)))){
-      		cerr << "fg: current: " << argv[1] << " no such job" << endl;
-      		return true;
-      	}
-        pid = joblist.jid2pid(stoi(argv[1].substr(1, string::npos)));
+      	jid = stoi(argv[1].substr(1));
       } else {
-      	if (!joblist.jid2pid(stoi(argv[1]))){
-      		cerr << "fg: current: " << argv[1] << " no such job" << endl;
-      		return true;
-      	}
-        pid = joblist.jid2pid(stoi(argv[1]));
+      	jid = stoi(argv[1]);
       }
     } catch (exception &e){
     	cerr << "fg: current: " << argv[1] << " no such job" << endl;
       	return true;
     }
-
-	pid = getpgid(pid); //get group id, just to double check.	
-
 	
-	if (!joblist.find_pid(pid)){
+	job_t *target_job = joblist.find_jid(jid);
+	if (!target_job){
 		cerr << "fg: current: " << argv[1] << " no such job" << endl;
 		return true;
 	}
 
 	/* if job is ST or BG */
-	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
-		if (kill (-pid, SIGCONT) < 0){ //let job continue
+	if (target_job->status == ST || target_job->status == BG){
+		pid_t pid = target_job->pids[0];
+		if (kill (-pid, SIGCONT) < 0){
 			cerr << "fg: current: " << argv[1] << " failed to continue when trying to be in foreground!" << endl;
 			return true;
 		}
 
-		joblist.find_pid(pid) -> status = BG;
+		target_job->status = BG;
 
-		if (tcsetpgrp (shell_terminal, pid) != 0){ //bring job to fg
+		if (tcsetpgrp(shell_terminal, pid) != 0){ //bring job to fg
 			cerr << "fg: current: " << argv[1] << " failed to be brought to foreground, will continue in BG!" << endl;
 			return true;
 		}
-		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
-		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
-			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
+
+		if (target_job->status == ST){ //reset termio if job stopped
+			if (tcsetattr(shell_terminal, TCSADRAIN, &target_job->ter) != 0){
 			cerr << "fg: current: " << argv[1] << " failed to restore termio setting of current job, will continue in BG!" << endl;
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 			return true;
 			}
 		}
 
-		joblist.find_pid(pid) -> status = FG;
+		target_job->status = FG;
 		int status;
 
 		waitpid(pid, &status, WUNTRACED);
 
 		if (WIFSTOPPED(status)){ //store child termio if stopped
-			tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
+			tcgetattr (shell_terminal, &target_job-> ter); 
 		}
 		if (tcsetpgrp (shell_terminal, shell_pid) != 0){ //bring shell to foreground
 			cerr << "fg: current: " << argv[1] <<" failed to bring shell to the foreground" << endl;
 			return false;
 		}
-		if (tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes) != 0){ // restore shell termio
+		if (tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes) != 0){ // restore shell termio
 			cerr << "fg: current: " << argv[1] <<" failed to restore shell termio setting!" << endl;
 			return false;
 		} 
@@ -358,10 +340,10 @@ bool fg(vector<string> argv){
 	/* if job is not ST or BG, cerr */
 	else{
 		string err_mes = " ";
-		if (joblist.find_pid(pid)->status != TN){
+		if (target_job->status != TN){
 			err_mes = "terminated!";
 		}
-		else if (joblist.find_pid(pid)->status != DNBG || joblist.find_pid(pid)->status != DNFG){
+		else if (target_job->status != DNBG || target_job->status != DNFG){
 			err_mes = "been done!";
 		}
 		cerr << "fg: current: " << argv[1] << " job has " << err_mes << "." << endl;
