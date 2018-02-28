@@ -48,7 +48,7 @@ bool evaluate(string *command, vector<vector<string>> *parsed_segments);
 bool no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
 
 // return false if execvp fails, true otherwise.
-bool pipe_exec (string *command, vector<vector<string>> *parsed_segments, enum job_status bg_fg);
+bool pipe_exec (vector<vector<string>> *parsed_segments, enum job_status bg_fg);
 
 bool built_in_exec(vector<string> argv);
 

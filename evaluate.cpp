@@ -62,7 +62,7 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 
 			signal(SIGTTOU, SIG_DFL);
 
-			cont = pipe_exec(command, parsed_segments, bg_fg);
+			cont = pipe_exec(parsed_segments, bg_fg);
   			return false;
 		} else{ //parent process
 			/*update joblist*/
@@ -507,7 +507,7 @@ void handle_error(string exec) {
 	}
 }
 
-bool pipe_exec (string *command, vector<vector<string>> *parsed_segments, enum job_status bg_fg) {
+bool pipe_exec(vector<vector<string>> *parsed_segments, enum job_status bg_fg) {
 	for(unsigned int i = 0; i < parsed_segments->size(); i++) {
 
 	}
