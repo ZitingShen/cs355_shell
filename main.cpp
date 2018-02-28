@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
   shell_pid = getpid();
   char *cmdline;
   struct sigaction sa_sigchld;
+  bool cont = true;
 
   // register signal handler for SIGCHLD sigaction
   sa_sigchld.sa_sigaction = &sigchld_handler;
@@ -40,14 +41,15 @@ int main(int argc, char **argv) {
 
   using_history();
 
-  while(true) {
+  while(cont) {
     joblist.remove_terminated_jobs();
     
     cmdline = readline("Thou shell not crash> ");
 
     if (cmdline == NULL) { /* End of file (ctrl-d) */
       cout << endl;
-      exit(EXIT_SUCCESS);
+      cont = false;
+      continue;
     }
 
     // check for history expansion
@@ -84,11 +86,8 @@ int main(int argc, char **argv) {
         vector<vector<string>> parsed_segments = parse_segments(&segments);
         
         // hand processed segments to evaluate
-        evaluate(&command, &parsed_segments);
-        vector<string>().swap(segments);
-        vector<vector<string>>().swap(parsed_segments);
+        cont = evaluate(&command, &parsed_segments);
       }
-      vector<string>().swap(commands);
     }
   }
 }

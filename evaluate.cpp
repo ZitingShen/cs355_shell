@@ -8,8 +8,7 @@ extern pid_t shell_pid;
 
 using namespace std;
 
-
-void evaluate (string *command, vector<vector<string> > *parsed_segments){
+bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
 	int len = parsed_segments->size();
@@ -33,7 +32,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			else if(cmd.compare("history") == 0) {
 				history(last_seg);
 			} else if(cmd.compare("exit") == 0) {
-				exit(EXIT_SUCCESS);
+				return false;
 			}
 		}
 		else{//not built_in
@@ -48,9 +47,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 	else{ 
 		string inter_result;
 	}
-	built_in_commands.clear();
-	vector<string>().swap(last_seg);
-	return;
+	return true;
 }
 
 
@@ -99,7 +96,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 		signal(SIGTTOU, SIG_DFL);
 
-		vector<string>().swap(argv);
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
 			cerr << "Child process of " << getppid() << " failed to execute or the execution is interrupted!" << endl;
@@ -149,7 +145,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
     	delete[] argvc[i];
   	}
   	delete[] argvc;
-  	vector<string>().swap(argv);
 }
 
 /*
@@ -198,7 +193,6 @@ void kill(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
-	vector<string>().swap(argv);
 }
 
 
@@ -253,7 +247,6 @@ void bg(vector<string> argv){
 			cerr << "Job " << s_cur_jid << "cannot continue in background, you can only bg a ST or BG job!" << endl;
 		}
 	}
-	vector<string>().swap(argv);
 }
 
 /*
@@ -342,7 +335,6 @@ void fg(vector<string> argv){
 	else{
 		cerr << "Job " << argv[1] << "can not be brought to foreground since it is neither ST nor BG!" << endl;
 	}
-	vector<string>().swap(argv);
 }
 
 
@@ -373,5 +365,4 @@ void history(vector<string> argv) {
 		i < history_base + history_length; i++) {
 		cout <<  i << " " << history_get(i)->line << endl;
 	}
-	vector<string>().swap(argv);
 }
