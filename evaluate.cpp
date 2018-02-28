@@ -180,7 +180,7 @@ void kill(vector<string> argv){
         	else{ //then is pid
         		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(cur_pid)){
-        			cerr << "Job with pid " << argv[i] << "does not exist" << endl;
+        			cerr << "Job with pid " << argv[i] << " does not exist" << endl;
         			continue;
         		}
         		

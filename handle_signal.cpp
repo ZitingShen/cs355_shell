@@ -31,7 +31,7 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 		joblist.find_pid(pid)->status = ST;
 		//cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status
 			//) << endl;
-		cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_code) << endl;
+		cout << "[" << joblist.pid2jid(pid) << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_code) << endl;
 	}
 	//cout << pid << "\t" << exit_code << endl;
 }
