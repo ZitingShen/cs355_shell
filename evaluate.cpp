@@ -83,7 +83,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 			cerr << "Failed to set new group" << endl;
 		}
 		
-		/*unmask signals*/
+		/*unmask SIGCHLD*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
 		signal(SIGCHLD, SIG_DFL);
@@ -97,9 +97,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
   			tcsetpgrp(shell_terminal, getpid());
   		}
 
-
 		signal(SIGTTOU, SIG_DFL);
-		
 
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
@@ -110,8 +108,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 	else{ //parent process
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
-		//cout << "job added" << endl;
-		
+
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -133,14 +130,13 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
 			if (WIFSTOPPED(status)){ //store child termio if stopped
-				cout << "child stopped" <<endl;
 				if (!joblist.find_pid(pid)){
 					cerr << "No such process with process id " << pid << endl;
 					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 					return;
 				}
 				if (tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter) < 0){
-					cout << "termio of stopped job not saved" <<endl; 
+					cerr << "termio of stopped job not saved" << endl; 
 				}
 			}
 
@@ -304,20 +300,39 @@ void fg(vector<string> argv){
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		if (kill (- pid, SIGCONT) < 0){ //let job continue
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to continue when trying to be in foreground!" << endl;
+			return;
 		}
-		tcsetpgrp (shell_terminal, pid); //bring job to fg
+
+		joblist.find_pid(pid) -> status = BG;
+
+		if (tcsetpgrp (shell_terminal, pid) != 0){ //bring job to fg
+			cerr << "Job " << joblist.pid2jid(pid) << " failed to be brought to foreground, will continue in BG!" << endl;
+			return;
+		}
 		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
-			tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter); 
+			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
+			cerr << "Job " << joblist.pid2jid(pid) << " failed to restore termio setting, will continue in BG!" << endl;
+			tcsetpgrp (shell_terminal, shell_pid); //bring shell to fg
+			return;
+			}
 		}
+
 		joblist.find_pid(pid) -> status = FG;
 		int status;
+
 		waitpid(pid, &status, WUNTRACED);
+
 		if (WIFSTOPPED(status)){ //store child termio if stopped
 			tcgetattr (shell_terminal, &joblist.find_pid(pid) -> ter); 
 		}
-		tcsetpgrp (shell_terminal, getpid());
-		tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+		if (tcsetpgrp (shell_terminal, shell_pid) != 0){ //bring shell to foreground
+			cerr << "Failed to bring shell to the foreground" << endl;
+			return;
+		}
+		if (tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes) != 0){ // restore shell termio
+			cerr << "Failed restore shell termio setting!"<< joblist.pid2jid(pid) << endl;
+		} 
 	}
 
 	/* if job is not ST or BG, cerr */
