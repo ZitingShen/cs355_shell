@@ -10,31 +10,29 @@ using namespace std;
 
 
 void evaluate (string *command, vector<vector<string> > *parsed_segments){
-	
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 	
-	int len = parsed_segments -> size();
+	int len = parsed_segments->size();
 	enum job_status bg_fg = FG; //default as FG
-	vector<string> last_seg = parsed_segments -> back();
+	vector<string> last_seg = parsed_segments->back();
 
 	/* No pipe!!*/
 	if (len == 1){
 		string cmd; //get the command
 		cmd = last_seg.front();
 		if (built_in_commands.count(cmd) == 1){ //if first argument is buildin comment
-			if (cmd.compare("kill") == 0){
+			if(cmd.compare("kill") == 0) {
 				kill(last_seg);
-			}
-			else if(cmd.compare("bg") == 0){
+			} else if(cmd.compare("bg") == 0) {
 				bg(last_seg);
-			}
-			else if(cmd.compare("fg") == 0){
+			} else if(cmd.compare("fg") == 0) {
 				fg(last_seg);
-			}
-			else if(cmd.compare("jobs") == 0){
+			} else if(cmd.compare("jobs") == 0) {
 				jobs();
 			}
-			else if(cmd.compare("exit") == 0){
+			else if(cmd.compare("history") == 0) {
+				history(last_seg);
+			} else if(cmd.compare("exit") == 0) {
 				exit(EXIT_SUCCESS);
 			}
 		}
@@ -47,9 +45,8 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 			no_pipe_exec(command, last_seg, bg_fg);
 		}
 	}
-
 	/* Pipe exists!!*/
-	else{//pipe exist
+	else{ 
 		string inter_result;
 	}
 	return;
@@ -84,7 +81,6 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	}
 
 	if (pid == 0 && bg_fg == FG){ //in child process
-		//signal(SIGINT, SIG_DFL);
 		cout<<"here"<<endl;
 		if (setpgid(0, 0)<0){
 			cerr<< "can not set new group"<<endl;
@@ -200,7 +196,7 @@ void kill(vector<string> argv){
    		
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check gpid
-		if (kill (- cur_pid, signo) < 0){
+		if (kill (-cur_pid, signo) < 0){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
@@ -334,4 +330,29 @@ void fg(vector<string> argv){
 
 void jobs(){
 	joblist.listjobs();
+}
+
+void history(vector<string> argv) {
+	int n = history_length;
+	if (argv.size() > 2) {
+		cout << "history: too many arguments" << endl;
+		return;
+	}
+	if (argv.size() == 2) {
+		try {
+			n = stoi(argv[1]);
+		} catch(exception &e) {
+			cout << "Usage: history [n]" << endl;
+			return;
+		}
+		if (n < 0) {
+			cout << "Usage: history [n]" << endl;
+			return;
+		}
+		if (n > history_length) n = history_length;
+	}
+	for (int i = history_base + history_length - n; 
+		i < history_base + history_length; i++) {
+		cout <<  i << " " << history_get(i)->line << endl;
+	}
 }

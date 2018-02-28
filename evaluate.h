@@ -70,4 +70,9 @@ stdout all current jobs by checking joblist. Will go over the entire list within
 */
 void jobs();
 
+/* historyPrint - Print out all the command lines stored in history. If given 
+ * an int n, print the last n command lines.
+ */
+void history(vector<string> argv);
+
 #endif
