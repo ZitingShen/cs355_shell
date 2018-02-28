@@ -10,23 +10,22 @@ extern struct termios shell_tmodes;
 
 void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	//int exit_status = sip->si_status;
-	int exit_code = sip -> si_code;
+	int exit_code = sip->si_code;
 	pid_t pid = sip->si_pid;
+	cout << "handler: " << pid << " " << exit_code << endl;
 	if (exit_code == CLD_EXITED){
-		if (joblist.find_pid(pid) -> status == BG){
+		if(joblist.find_pid(pid)->status == BG) {
 			//cout << "DNBG" << endl;
 			joblist.find_pid(pid)->status = DNBG;
 		}
 		else{
 			//cout << "DNFG" << endl;
-			joblist.find_pid(pid) -> status = DNFG;
+			joblist.find_pid(pid)->status = DNFG;
 		}
-	}
-	else if (exit_code == CLD_KILLED){
+	} else if (exit_code == CLD_KILLED) {
 		//cout << "TN" << endl;
 		joblist.find_pid(pid)->status = TN;
-	}
-	else if (exit_code == CLD_STOPPED){
+	} else if (exit_code == CLD_STOPPED) {
 		//cout << "ST" << endl;
 		joblist.find_pid(pid)->status = ST;
 		//cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status

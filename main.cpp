@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   // register signal handler for SIGCHLD sigaction
   sa_sigchld.sa_sigaction = &sigchld_handler;
   sigemptyset(&sa_sigchld.sa_mask);
-  sa_sigchld.sa_flags = SA_SIGINFO | SA_RESTART | SA_NODEFER;
+  sa_sigchld.sa_flags = SA_SIGINFO | SA_RESTART;
   if (sigaction(SIGCHLD, &sa_sigchld, 0) == -1) {
     cerr << "Failed to register SIGCHLD" << endl;
     exit(EXIT_FAILURE);

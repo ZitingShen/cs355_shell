@@ -68,7 +68,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
   	/* Block SIGCHLD signal while fork(), setpgid and add joblist */  
   	sigprocmask(SIG_BLOCK, &signalSet, NULL);
-
   	/*fork*/
   	if ((pid = fork()) < 0 ){
 		cerr << "Failed to fork child process at process " << getpid() << endl;
@@ -78,10 +77,10 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		if (setpgid(0, 0) < 0){
 			cerr << "Failed to set new group" << endl;
 		}
-		
+
 		/*unmask SIGCHLD*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
+		
 		signal(SIGCHLD, SIG_DFL);
 		signal(SIGINT, SIG_DFL);
 		signal(SIGTSTP, SIG_DFL);
@@ -91,7 +90,6 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 		if (bg_fg == FG){ 
   			tcsetpgrp(shell_terminal, getpid());
-  			//tcgetattr(shell_terminal, &shell_tmodes);
   		}
 
 		signal(SIGTTOU, SIG_DFL);
