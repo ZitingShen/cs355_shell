@@ -35,9 +35,6 @@ int main(int argc, char **argv) {
   signal(SIGTTOU, SIG_IGN);
   signal(SIGQUIT, SIG_IGN);
 
-  /* Set previous directory to current directory */
-  string prevDir = getenv("PWD");
-
   // configure readline to auto-complete paths when the tab key is hit
   rl_bind_key('\t', rl_complete);
 
