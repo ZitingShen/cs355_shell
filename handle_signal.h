@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <iostream>
 #include <readline/readline.h>
-#include <readline/history.h>
 
 /* SIGCHLD_handler 
 	Update job status with si_status.
