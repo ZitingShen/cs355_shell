@@ -129,7 +129,7 @@ job_t *joblist_t::find_unique_exec(string exec) {
 			}
 		}
 	}
-	return NULL;
+	return result;
 }
 
 pid_t joblist_t::jid2pid(int jid) {
