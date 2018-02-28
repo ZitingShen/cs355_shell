@@ -110,16 +110,38 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 					cerr << argvc[0] << ": resource temporarily unavailable" << endl;
 					break;
 				case EFAULT:
+					cerr << argvc[0] << ": bad address" << endl;
+					break;
 				case EINTR:
+					cerr << argvc[0] << ": interrupted function call" << endl;
+					break;
 				case ELOOP:
+					cerr << argvc[0] << ": too many levels of symbolic links" << endl;
+					break;
 				case ENAMETOOLONG:
+					cerr << argvc[0] << ": filename too long" << endl;
+					break;
 				case ENOENT:
+					cerr << argvc[0] << ": command not found" << endl;
+					break;
 				case ENOLINK:
+					cerr << argvc[0] << ": link has been severed" << endl;
+					break;
 				case ENOTDIR:
+					cerr << argvc[0] << ": not a directory" << endl;
+					break;
 				case ENOEXEC:
+					cerr << argvc[0] << ": exec format error" << endl;
+					break;
 				case ENOMEM:
+					cerr << argvc[0] << ": not enough space/cannot allocate memory" << endl;
+					break;
 				case ETXTBSY:
-				default:;
+					cerr << argvc[0] << ": text file busy" << endl;
+					break;
+				default:
+					cerr << argvc[0] << ": error" << endl;
+					break;
 			}
 			for(unsigned int i = 0; i < argv.size()+1; i++) {
     			delete[] argvc[i];
@@ -135,7 +157,7 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		joblist.add(pid, bg_fg, *command);
 
 		if (setpgid(pid, pid) < 0){
-			cerr<< "Failed to set new group"<<endl;
+			cerr << pid << ": failed to set new group"<<endl;
 		}
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
@@ -154,10 +176,10 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				if (joblist.find_pid(pid)){
 					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
-						cerr << "termio of stopped job not saved" << endl; 
+						cerr << "termios of stopped job not saved" << endl; 
 					}
 				} else {
-					cerr << "No such process with process id " << pid << endl;
+					cerr << pid << " not found in the joblist" << endl;
 				}
 				
 			}
@@ -184,7 +206,6 @@ bool kill(vector<string> argv){
 	if (argv.size() < 2){
 		cerr << "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]" << endl;
 		return false;
-	}
 
 	if (argv[1].compare("-9") == 0){
 		signo = SIGKILL;
@@ -196,7 +217,7 @@ bool kill(vector<string> argv){
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
 				if (!joblist.find_jid(stoi(argv[i].substr(1)))){
-					cerr << "Job " << argv[i].substr(1) << " does not exist!" << endl;
+					cerr << argv[0] << ": " << argv[i] << ": no such job" << endl;
 					continue;
 				}
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1)));
@@ -204,13 +225,13 @@ bool kill(vector<string> argv){
         	else{ //then is pid
         		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(cur_pid)){
-        			cerr << "Job with pid " << argv[i] << " does not exist" << endl;
+        			cerr << argv[0] << ": (" << argv[i] << "): no such process" << endl;
         			continue;
         		}
         		
         	}
     	} catch (exception &e){
-    		cerr << "No process with process number " << cur_pid << endl;
+    		cerr << argv[0] << ": " << argv[i] << ": arguments must be process or job IDs" << endl;
     		continue; //continue to the next iteration
    		}
 
@@ -218,7 +239,7 @@ bool kill(vector<string> argv){
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check pgid
 		if (kill(-cur_pid, signo) > 0){
-			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
+			cerr << argv[0] << ": job " << joblist.pid2jid(cur_pid) << "failed to be killed" << endl;
 		}
 	}
 	return true;
