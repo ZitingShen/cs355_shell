@@ -187,7 +187,7 @@ void kill(vector<string> argv){
    		
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check pgid
-		if (kill(cur_pid, signo) > 0){
+		if (kill(-cur_pid, signo) > 0){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
