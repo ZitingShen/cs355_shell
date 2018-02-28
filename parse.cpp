@@ -64,6 +64,7 @@ vector<vector<string>> parse_segments(vector<string> *segments) {
 			partial_result.push_back("&");
 		}
 		result.push_back(partial_result);
+		vector<string>().swap(partial_result);
 	}
 	return result;
 }

@@ -49,6 +49,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 		string inter_result;
 	}
 	built_in_commands.clear();
+	vector<string>().swap(last_seg);
 	return;
 }
 
