@@ -259,7 +259,7 @@ void bg(vector<string> argv){
 (3) job number can be without % */
 void fg(vector<string> argv){
 	pid_t pid;
-	sigset_t masked_signals;
+	//sigset_t masked_signals;
   	
 	/*check argv size*/
 	if (argv.size() < 2){
