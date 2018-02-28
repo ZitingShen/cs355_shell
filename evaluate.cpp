@@ -187,7 +187,7 @@ void kill(vector<string> argv){
    		
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check pgid
-		if (kill(-cur_pid, signo) > 0){
+		if (kill(cur_pid, signo) > 0){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
@@ -233,15 +233,15 @@ void bg(vector<string> argv){
 		}
 
     	/*only send sigcont when job is ST*/
-		if (joblist.find_pid(cur_pid) -> status == ST){
+		if (joblist.find_pid(cur_pid)->status == ST){
 			cur_pid = getpgid(cur_pid); //just to double check
 			if (kill (-cur_pid, SIGCONT) < 0){ //let job continue
 				cerr << "Job " << s_cur_jid << "failed to continue in background!" << endl;
 				continue;
 			}
-			joblist.find_pid(cur_pid) -> status = BG;
+			joblist.find_pid(cur_pid)->status = BG;
 		}
-		else if (joblist.find_pid(cur_pid) -> status != BG){
+		else if (joblist.find_pid(cur_pid)->status != BG){
 			cerr << "Job " << s_cur_jid << "cannot continue in background, you can only bg a ST or BG job!" << endl;
 		}
 	}
