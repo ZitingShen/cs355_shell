@@ -22,16 +22,19 @@ bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 		cmd = last_seg.front();
 		if (built_in_commands.count(cmd) == 1){ //if first argument is buildin comment
 			if(cmd.compare("kill") == 0) {
-				kill(last_seg);
-			} else if(cmd.compare("bg") == 0) {
-				bg(last_seg);
-			} else if(cmd.compare("fg") == 0) {
-				fg(last_seg);
-			} else if(cmd.compare("jobs") == 0) {
-				jobs();
+				return kill(last_seg);
+			} 
+			else if(cmd.compare("bg") == 0) {
+				return bg(last_seg);
+			} 
+			else if(cmd.compare("fg") == 0) {
+				return fg(last_seg);
+			} 
+			else if(cmd.compare("jobs") == 0) {
+				return jobs();
 			}
 			else if(cmd.compare("history") == 0) {
-				history(last_seg);
+				return history(last_seg);
 			} else if(cmd.compare("exit") == 0) {
 				return false;
 			}
@@ -122,7 +125,8 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
     			delete[] argvc[i];
   			}
   			delete[] argvc;
-  			return false;
+  			return false
+;
 		}
 
 	}
@@ -173,13 +177,13 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 (3) if invalid, will still check the next jid.
 (4) -9 flag can only be at the second argument, otherwise -9 will be recognized as a job number
 */
-void kill(vector<string> argv){
+bool kill(vector<string> argv){
 	pid_t cur_pid;
 	int signo = SIGTERM;
 	unsigned int i = 1;
 	if (argv.size() < 2){
 		cerr << "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]" << endl;
-		return;
+		return false;
 	}
 
 	if (argv[1].compare("-9") == 0){
@@ -217,6 +221,7 @@ void kill(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(cur_pid) << "failed to be killed!" << endl;
 		}
 	}
+	return true;
 }
 
 
@@ -225,13 +230,13 @@ void kill(vector<string> argv){
 (2)can take a list of jids, w/ or w/o %
 (3)the -9 flag can be any where 
 */
-void bg(vector<string> argv){
+bool bg(vector<string> argv){
 	//loop through every job in the list
 	string s_cur_jid;
 	pid_t cur_pid;
 	if (argv.size() < 2){
 		cerr << "bg: current: no such job" << endl;
-		return;
+		return true;
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
@@ -249,7 +254,7 @@ void bg(vector<string> argv){
 			//check whether pid is valid?
 			if (!joblist.jid2pid(stoi(s_cur_jid))){
 				cerr << "bg: current: " << argv[i] << " no such job" << endl;
-				return;
+				continue;
 			}
         	cur_pid = joblist.jid2pid(stoi(s_cur_jid));
       	} catch (exception &e){
@@ -277,25 +282,26 @@ void bg(vector<string> argv){
 				err_mes = "terminated!";
 			}
 			else if (joblist.find_pid(cur_pid)->status != DNBG || joblist.find_pid(cur_pid)->status != DNFG){
-				err_mes = "been done!"
+				err_mes = "been done!";
 			}
-			cerr << "bg: current: " << argv[i] << " job has " << err_mes << endl;
+			cerr << "bg: current: " << argv[i] << " job has " << err_mes << "." << endl;
 		}
 	}
+	return true;
 }
 
 /*
 (1) take actions only when given a job with ST or BG status.
 (2) argument can be any size, but only argv[1] will be take into fg, other will be ignored.
 (3) job number can be without % */
-void fg(vector<string> argv){
+bool fg(vector<string> argv){
 	pid_t pid;
 	//sigset_t masked_signals;
   	
 	/*check argv size*/
 	if (argv.size() < 2){
 		cerr << "fg: current: no such job" << endl;
-		return;
+		return true;
 	}
 
 	/*convert string to int and then jid to pid*/
@@ -304,19 +310,19 @@ void fg(vector<string> argv){
       	//check whether pid is valid?
       	if (!joblist.jid2pid(stoi(argv[1].substr(1, string::npos)))){
       		cerr << "fg: current: " << argv[1] << " no such job" << endl;
-      		return;
+      		return true;
       	}
         pid = joblist.jid2pid(stoi(argv[1].substr(1, string::npos)));
       } else {
       	if (!joblist.jid2pid(stoi(argv[1]))){
       		cerr << "fg: current: " << argv[1] << " no such job" << endl;
-      		return;
+      		return true;
       	}
         pid = joblist.jid2pid(stoi(argv[1]));
       }
     } catch (exception &e){
     	cerr << "fg: current: " << argv[1] << " no such job" << endl;
-      	return;
+      	return true;
     }
 
 	pid = getpgid(pid); //get group id, just to double check.	
@@ -324,28 +330,28 @@ void fg(vector<string> argv){
 	
 	if (!joblist.find_pid(pid)){
 		cerr << "fg: current: " << argv[1] << " no such job" << endl;
-		return;
+		return true;
 	}
 
 	/* if job is ST or BG */
 	if (joblist.find_pid(pid) -> status == ST || joblist.find_pid(pid) -> status == BG){
 		if (kill (-pid, SIGCONT) < 0){ //let job continue
 			cerr << "fg: current: " << argv[1] << " failed to continue when trying to be in foreground!" << endl;
-			return;
+			return true;
 		}
 
 		joblist.find_pid(pid) -> status = BG;
 
 		if (tcsetpgrp (shell_terminal, pid) != 0){ //bring job to fg
 			cerr << "fg: current: " << argv[1] << " failed to be brought to foreground, will continue in BG!" << endl;
-			return;
+			return true;
 		}
 		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
-			cerr << "fg: current: " << argv[1] << " failed to restore termio setting, will continue in BG!" << endl;
+			cerr << "fg: current: " << argv[1] << " failed to restore termio setting of current job, will continue in BG!" << endl;
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
-			return;
+			return true;
 			}
 		}
 
@@ -359,40 +365,50 @@ void fg(vector<string> argv){
 		}
 		if (tcsetpgrp (shell_terminal, shell_pid) != 0){ //bring shell to foreground
 			cerr << "fg: current: " << argv[1] <<" failed to bring shell to the foreground" << endl;
-			return;
+			return false;
 		}
 		if (tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes) != 0){ // restore shell termio
 			cerr << "fg: current: " << argv[1] <<" failed to restore shell termio setting!" << endl;
+			return false;
 		} 
 	}
 
 	/* if job is not ST or BG, cerr */
 	else{
-		cerr << "fg: current: " << argv[1] << " cannot be brought to foreground since it is neither ST nor BG!" << endl;
+		string err_mes = " ";
+		if (joblist.find_pid(pid)->status != TN){
+			err_mes = "terminated!";
+		}
+		else if (joblist.find_pid(pid)->status != DNBG || joblist.find_pid(pid)->status != DNFG){
+			err_mes = "been done!";
+		}
+		cerr << "fg: current: " << argv[1] << " job has " << err_mes << "." << endl;
 	}
+	return true;
 }
 
 
-void jobs(){
+bool jobs(){
 	joblist.listjobs();
+	return true;
 }
 
-void history(vector<string> argv) {
+bool history(vector<string> argv) {
 	int n = history_length;
 	if (argv.size() > 2) {
 		cout << "history: too many arguments" << endl;
-		return;
+		return true;
 	}
 	if (argv.size() == 2) {
 		try {
 			n = stoi(argv[1]);
 		} catch(exception &e) {
 			cout << "Usage: history [n]" << endl;
-			return;
+			return true;
 		}
 		if (n < 0) {
 			cout << "Usage: history [n]" << endl;
-			return;
+			return true;
 		}
 		if (n > history_length) n = history_length;
 	}
@@ -400,4 +416,5 @@ void history(vector<string> argv) {
 		i < history_base + history_length; i++) {
 		cout <<  i << " " << history_get(i)->line << endl;
 	}
+	return true;
 }
