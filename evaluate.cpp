@@ -4,6 +4,7 @@
 
 extern struct joblist_t joblist;
 extern struct termios shell_tmodes;
+extern pid_t shell_pid;
 
 using namespace std;
 
@@ -54,7 +55,7 @@ void evaluate (string *command, vector<vector<string> > *parsed_segments){
 }
 
 
-void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
+void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 	pid_t pid;
 	sigset_t signalSet;  
   	sigemptyset(&signalSet);
@@ -109,6 +110,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 	else{ //parent process
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
+		cout << "job added" << endl;
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -118,9 +120,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 
 		if (bg_fg == FG){ 
   			tcsetpgrp(shell_terminal, pid);
-  		} else {
-  			tcsetpgrp(shell_terminal, getpid());
-  		}
+  		} 
 
 		int status;
 
@@ -129,15 +129,18 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
 			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
-			tcsetpgrp(shell_terminal, getpid()); //bring shell to fg
+			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
 			if (WIFSTOPPED(status)){ //store child termio if stopped
+				cout << "child stopped" <<endl;
 				if (!joblist.find_pid(pid)){
 					cerr << "No such process with process id " << pid << endl;
-					tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
+					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 					return;
 				}
-				tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter); 
+				if (tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter) < 0){
+					cout << "termio of stopped job not saved" <<endl; 
+				}
 			}
 
 			

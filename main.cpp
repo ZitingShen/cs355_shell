@@ -6,13 +6,16 @@
 #include "parse.h"
 #define shell_terminal STDIN_FILENO
 
+
 using namespace std;
 
 struct joblist_t joblist;
 struct termios shell_tmodes;
+pid_t shell_pid;
 
 int main(int argc, char **argv) {
   tcgetattr (shell_terminal, &shell_tmodes);
+  shell_pid = getpid();
   char *cmdline;
   struct sigaction sa_sigchld;
 
