@@ -85,17 +85,20 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
-		if (bg_fg == FG){ 
-  			tcsetpgrp(shell_terminal, getpid());
-  		}
-
 		signal(SIGCHLD, SIG_DFL);
 		signal(SIGINT, SIG_DFL);
 		signal(SIGTSTP, SIG_DFL);
 		signal(SIGTERM, SIG_DFL);
 		signal(SIGTTIN, SIG_DFL);
-		signal(SIGTTOU, SIG_DFL);
 		signal(SIGQUIT, SIG_DFL);
+
+		if (bg_fg == FG){ 
+  			tcsetpgrp(shell_terminal, getpid());
+  		}
+
+
+		signal(SIGTTOU, SIG_DFL);
+		
 
 		if (execvp(argvc[0], argvc) < 0){
 			// TODO: print different error message depending on errno.
