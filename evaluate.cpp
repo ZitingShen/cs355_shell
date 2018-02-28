@@ -104,23 +104,20 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		/*update joblist*/
 		joblist.add(pid, bg_fg, *command);
 
-		/*unmask signals*/
-		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
 		if (setpgid(pid, pid) < 0){
 			cerr<< "Failed to set new group"<<endl;
 		}
-
-		if (bg_fg == FG){ 
-  			tcsetpgrp(shell_terminal, pid);
-  		} 
-
-		int status;
+		/*unmask signals*/
+		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
 		//do nothing if bg, will clean up in the next loop.
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
+			tcsetpgrp(shell_terminal, pid);
+
+			int status;
 			waitpid(pid, &status, WUNTRACED);
+
 			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
@@ -130,7 +127,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 					//tcsetattr (shell_terminal, TCSADRAIN, &shell_tmodes);
 					return;
 				}
-				if (tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter) < 0){
+				if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
 					cerr << "termio of stopped job not saved" << endl; 
 				}
 			}
