@@ -206,6 +206,7 @@ bool kill(vector<string> argv){
 	if (argv.size() < 2){
 		cerr << "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]" << endl;
 		return false;
+	}
 
 	if (argv[1].compare("-9") == 0){
 		signo = SIGKILL;
