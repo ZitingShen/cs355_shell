@@ -95,7 +95,7 @@ void no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 		if (bg_fg == FG){ 
   			tcsetpgrp(shell_terminal, getpid());
-  			tcgetattr(shell_terminal, &shell_tmodes);
+  			//tcgetattr(shell_terminal, &shell_tmodes);
   		}
 
 		signal(SIGTTOU, SIG_DFL);
@@ -310,7 +310,7 @@ void fg(vector<string> argv){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to be brought to foreground, will continue in BG!" << endl;
 			return;
 		}
-		tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
+		//tcgetattr (shell_terminal, &shell_tmodes); //store shell termio
 		if (joblist.find_pid(pid) -> status == ST){ //reset termio if job stopped
 			if (tcsetattr (shell_terminal, TCSADRAIN, &joblist.find_pid(pid) -> ter) != 0){
 			cerr << "Job " << joblist.pid2jid(pid) << " failed to restore termio setting, will continue in BG!" << endl;
