@@ -161,13 +161,16 @@ bool kill(vector<string> argv){
 	int signo = SIGTERM;
 	unsigned int i = 1;
 	if (argv.size() < 2){
-		cerr << "kill: usage: kill pid | jobid ... or kill -9 pid | jobid" << endl;
+		cerr << "kill: usage: kill [-sigspec] pid | jobspec ..." << endl;
 		return true;
 	}
 
 	if (argv[1][0] == '-'){
-		signo = stoi(argv[i].substr(1);
-		i++;
+		try{
+			signo = stoi(argv[i].substr(1));
+			i++;
+		} catch (exception &e) {
+		}
 	}
 
 	for (;i < argv.size(); i++){
