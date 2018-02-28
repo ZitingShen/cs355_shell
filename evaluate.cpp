@@ -128,6 +128,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 		if (bg_fg == FG){ //waiting for fg child to complete, need to swap termio, also need to store termio
 			//of child if child is stopeed
 			waitpid(pid, &status, WUNTRACED);
+			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 			tcsetpgrp(shell_terminal, getpid()); //bring shell to fg
 
 			if (WIFSTOPPED(status)){ //store child termio if stopped
@@ -139,7 +140,7 @@ void no_pipe_exec (string *command, vector<string> argv, enum job_status bg_fg){
 				tcgetattr(shell_terminal, &joblist.find_pid(pid) -> ter); 
 			}
 
-			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+			
 		}
 	}
 
