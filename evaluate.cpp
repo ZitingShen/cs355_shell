@@ -1,12 +1,13 @@
 #include "evaluate.h"
 #define shell_terminal STDIN_FILENO
 
-
 extern struct joblist_t joblist;
 extern struct termios shell_tmodes;
 extern pid_t shell_pid;
 
 using namespace std;
+
+void handle_error(string exec);
 
 bool evaluate (string *command, vector<vector<string> > *parsed_segments){
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
@@ -99,56 +100,12 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		signal(SIGTTOU, SIG_DFL);
 
 		if (execvp(argvc[0], argvc) < 0){
-			switch(errno) {
-				case E2BIG:
-					cerr << argvc[0] << ": argument list too long" << endl;
-					break;
-				case EACCES:
-					cerr << argvc[0] << ": permission denied" << endl;
-					break;
-				case EAGAIN:
-					cerr << argvc[0] << ": resource temporarily unavailable" << endl;
-					break;
-				case EFAULT:
-					cerr << argvc[0] << ": bad address" << endl;
-					break;
-				case EINTR:
-					cerr << argvc[0] << ": interrupted function call" << endl;
-					break;
-				case ELOOP:
-					cerr << argvc[0] << ": too many levels of symbolic links" << endl;
-					break;
-				case ENAMETOOLONG:
-					cerr << argvc[0] << ": filename too long" << endl;
-					break;
-				case ENOENT:
-					cerr << argvc[0] << ": command not found" << endl;
-					break;
-				case ENOLINK:
-					cerr << argvc[0] << ": link has been severed" << endl;
-					break;
-				case ENOTDIR:
-					cerr << argvc[0] << ": not a directory" << endl;
-					break;
-				case ENOEXEC:
-					cerr << argvc[0] << ": exec format error" << endl;
-					break;
-				case ENOMEM:
-					cerr << argvc[0] << ": not enough space/cannot allocate memory" << endl;
-					break;
-				case ETXTBSY:
-					cerr << argvc[0] << ": text file busy" << endl;
-					break;
-				default:
-					cerr << argvc[0] << ": error" << endl;
-					break;
-			}
+			handle_error(argv[0]);
 			for(unsigned int i = 0; i < argv.size()+1; i++) {
     			delete[] argvc[i];
   			}
   			delete[] argvc;
-  			return false
-;
+  			return false;
 		}
 
 	}
@@ -439,4 +396,51 @@ bool history(vector<string> argv) {
 		cout <<  i << " " << history_get(i)->line << endl;
 	}
 	return true;
+}
+
+void handle_error(string exec) {
+	switch(errno) {
+		case E2BIG:
+			cerr << exec << ": argument list too long" << endl;
+			break;
+		case EACCES:
+			cerr << exec << ": permission denied" << endl;
+			break;
+		case EAGAIN:
+			cerr << exec << ": resource temporarily unavailable" << endl;
+			break;
+		case EFAULT:
+			cerr << exec << ": bad address" << endl;
+			break;
+		case EINTR:
+			cerr << exec << ": interrupted function call" << endl;
+			break;
+		case ELOOP:
+			cerr << exec << ": too many levels of symbolic links" << endl;
+			break;
+		case ENAMETOOLONG:
+			cerr << exec << ": filename too long" << endl;
+			break;
+		case ENOENT:
+			cerr << exec << ": command not found" << endl;
+			break;
+		case ENOLINK:
+			cerr << exec << ": link has been severed" << endl;
+			break;
+		case ENOTDIR:
+			cerr << exec << ": not a directory" << endl;
+			break;
+		case ENOEXEC:
+			cerr << exec << ": exec format error" << endl;
+			break;
+		case ENOMEM:
+			cerr << exec << ": not enough space/cannot allocate memory" << endl;
+			break;
+		case ETXTBSY:
+			cerr << exec << ": text file busy" << endl;
+			break;
+		default:
+			cerr << exec << ": error" << endl;
+			break;
+	}
 }
