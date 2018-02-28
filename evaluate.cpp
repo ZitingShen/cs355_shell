@@ -161,7 +161,7 @@ bool kill(vector<string> argv){
 	int signo = SIGTERM;
 	unsigned int i = 1;
 	if (argv.size() < 2){
-		cerr << "kill: usage: kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]" << endl;
+		cerr << "kill: usage: kill pid | jobid ... or kill -9 pid | jobid" << endl;
 		return true;
 	}
 
