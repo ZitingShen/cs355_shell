@@ -1,5 +1,8 @@
 README
 
+Note:
+1. if bg and fg is not followed by any other arguments, then bg or fg an available job if there is any.
+
 Not-supported functionality:
 1. consecutive ;s
 2. consecutive |s

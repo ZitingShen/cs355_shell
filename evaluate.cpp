@@ -383,12 +383,17 @@ bool kill(vector<string> argv){
 (2)can take a list of jids, w/ or w/o %
 */
 bool bg(vector<string> argv){
-	//loop through every job in the list
 	string s_cur_jid;
 	int cur_jid;
+	job_t *target_job;
 	if(argv.size() < 2) {
-		cerr << "bg: current: no such job" << endl;
-		return true;
+		target_job = joblist.find_stopped();
+		if(!target_job) {
+			cerr << "bg: current: no such job" << endl;
+			return true;
+		} else {
+			argv.push_back(to_string(target_job->jid));
+		}
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
@@ -399,7 +404,6 @@ bool bg(vector<string> argv){
       		s_cur_jid = argv[i];
       	}
 
-      	job_t *target_job;
 		try {
 			cur_jid = stoi(s_cur_jid);
 			target_job = joblist.find_jid(cur_jid);
@@ -451,21 +455,26 @@ bool bg(vector<string> argv){
 (3) job number can be without % */
 bool fg(vector<string> argv){
 	int jid;
+	job_t *target_job;
 
 	/*check argv size*/
 	if (argv.size() < 2){
-		cerr << "fg: current: no such job" << endl;
-		return true;
+		target_job = joblist.find_stopped_or_bg();
+		if(!target_job) {
+			cerr << "fg: current: no such job" << endl;
+			return true;
+		} else {
+			argv.push_back(to_string(target_job->jid));
+		}
 	}
 
-	job_t *target_job;
 	try { // convert argument to jid
-      if (argv[1][0] == '%') {
-      	jid = stoi(argv[1].substr(1));
-      } else {
-      	jid = stoi(argv[1]);
-      }
-      target_job = joblist.find_jid(jid);
+		if (argv[1][0] == '%') {
+			jid = stoi(argv[1].substr(1));
+		} else {
+			jid = stoi(argv[1]);
+		}
+		target_job = joblist.find_jid(jid);
     } catch (exception &e){
     	if(joblist.find_exec(argv[1])) {
     		target_job = joblist.find_unique_exec(argv[1]);

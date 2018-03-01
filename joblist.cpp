@@ -132,6 +132,24 @@ job_t *joblist_t::find_unique_exec(string exec) {
 	return result;
 }
 
+job_t *joblist_t::find_stopped() {
+	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
+		if(it->status == ST) {
+			return &(*it);
+		}
+	}
+	return NULL;
+}
+
+job_t *joblist_t::find_stopped_or_bg() {
+	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
+		if(it->status == ST || it->status == BG) {
+			return &(*it);
+		}
+	}
+	return NULL;
+}
+
 pid_t joblist_t::jid2pid(int jid) {
 	if(jid < 1) return -1;
 
