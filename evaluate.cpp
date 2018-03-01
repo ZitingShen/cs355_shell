@@ -116,6 +116,7 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				if (joblist.find_pid(pid)){
+					cout<< argv[0] << " stopped"<< endl;
 					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
 						cerr << "Command :" << argv[0] << "termios of stopped job not saved" << endl; 
 					}

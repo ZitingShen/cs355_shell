@@ -87,6 +87,9 @@ int main(int argc, char **argv) {
         
         // hand processed segments to evaluate
         cont = evaluate(&command, &parsed_segments);
+        if (cont == false){
+          break;
+        }
       }
     }
   }
