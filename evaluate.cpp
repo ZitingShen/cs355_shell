@@ -306,8 +306,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				}
 			} else {
 				close(pipes[2*(i-1)]);
-				close(pipes[2*i]);
 				close(pipes[2*i+1]);
+				close(pipes[2*i]);
 			}
 		}
 	}
