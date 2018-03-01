@@ -35,7 +35,7 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 				bg_fg = BG;
 				parsed_segments[parsed_segments -> size()].pop_back();
 			}
-		cont = pipe_exec( command, parsed_segments, bg_fg);
+		cont = pipe_exec(command, parsed_segments, bg_fg);
 	}
 	return cont;
 }
@@ -147,7 +147,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 	pid_t pid;
 	int pipes[2 * num_pipes];
 	vector<string> cur_seg;
-	set<string> built_in_commands = {"fg", "bg", "kill", "exit"};
+	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 
 	/*create pipe for commands between each | */
 	for (int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
@@ -165,29 +165,6 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
 		string cmd = cur_seg[0];
-		if (cur_seg.back().compare("&") == 0 && i != (parsed_segments -> size()) - 1 ){ 
-			cerr << " syntax error near unexpected token `|' " << endl;
-			return true;
-		}
-
-		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
-      		if (cmd.compare("fg") == 0 ){
-      			cerr << "fg: no job control" << endl;
-      			continue;
-      		}
-     		else if (cmd.compare("bg") == 0 ){
-      			cerr << "bg: no job control" << endl;
-      			continue;
-      		}
-      		else if (cmd.compare("kill") == 0 ){
-      			//bool ecex_suc = built_in_exec(cur_seg);
-      			built_in_exec(cur_seg);
-      			continue;
-      		}
-      		else{ //cmd is exit, will ignore
-      			continue;
-      		}
-      	}
 
 		sigprocmask(SIG_BLOCK, &signalSet, NULL);
 
@@ -239,6 +216,21 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				close(pipes[i]);
       		}
 
+
+      		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
+	      		if (cmd.compare("fg") == 0 ){
+	      			cerr << "fg: no job control" << endl;
+	      			return false;
+	      		}
+	     		else if (cmd.compare("bg") == 0 ){
+	      			cerr << "bg: no job control" << endl;
+	      			return false;
+	      		} else {
+	      			built_in_exec(cur_seg);
+	      			return false;
+	      		}
+	      	}
+
       		/*Store arguemtns in c strings.*/
   			char** argvc = new char*[cur_seg.size()+1]; 
   			for(unsigned int i = 0; i < cur_seg.size(); i++){
@@ -257,9 +249,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   				return false;
 			}
 
-      	}
-
-      	else{ //parent process
+      	} else{ //parent process
 			/*update joblist*/
 			joblist.add(pid, bg_fg, *command, cmd);
 
@@ -272,8 +262,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 
 			if (i == 0 && bg_fg == BG){
 				cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
-			}
-			else{
+			} else {
 				tcsetpgrp(shell_terminal, pid); //bring child to foreground
 
 				int status;
@@ -383,12 +372,17 @@ bool kill(vector<string> argv){
 (2)can take a list of jids, w/ or w/o %
 */
 bool bg(vector<string> argv){
-	//loop through every job in the list
 	string s_cur_jid;
 	int cur_jid;
+	job_t *target_job;
 	if(argv.size() < 2) {
-		cerr << "bg: current: no such job" << endl;
-		return true;
+		target_job = joblist.find_stopped();
+		if(!target_job) {
+			cerr << "bg: current: no such job" << endl;
+			return true;
+		} else {
+			argv.push_back(to_string(target_job->jid));
+		}
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
@@ -399,7 +393,6 @@ bool bg(vector<string> argv){
       		s_cur_jid = argv[i];
       	}
 
-      	job_t *target_job;
 		try {
 			cur_jid = stoi(s_cur_jid);
 			target_job = joblist.find_jid(cur_jid);
@@ -451,21 +444,26 @@ bool bg(vector<string> argv){
 (3) job number can be without % */
 bool fg(vector<string> argv){
 	int jid;
+	job_t *target_job;
 
 	/*check argv size*/
 	if (argv.size() < 2){
-		cerr << "fg: current: no such job" << endl;
-		return true;
+		target_job = joblist.find_stopped_or_bg();
+		if(!target_job) {
+			cerr << "fg: current: no such job" << endl;
+			return true;
+		} else {
+			argv.push_back(to_string(target_job->jid));
+		}
 	}
 
-	job_t *target_job;
 	try { // convert argument to jid
-      if (argv[1][0] == '%') {
-      	jid = stoi(argv[1].substr(1));
-      } else {
-      	jid = stoi(argv[1]);
-      }
-      target_job = joblist.find_jid(jid);
+		if (argv[1][0] == '%') {
+			jid = stoi(argv[1].substr(1));
+		} else {
+			jid = stoi(argv[1]);
+		}
+		target_job = joblist.find_jid(jid);
     } catch (exception &e){
     	if(joblist.find_exec(argv[1])) {
     		target_job = joblist.find_unique_exec(argv[1]);

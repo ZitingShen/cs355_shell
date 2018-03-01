@@ -54,6 +54,8 @@ struct joblist_t {
 	job_t *find_pid(pid_t pid);
 	job_t *find_exec(string exec);
 	job_t *find_unique_exec(string exec);
+	job_t *find_stopped();
+	job_t *find_stopped_or_bg();
 
 	// return -1 on failure
 	pid_t jid2pid(int jid);
