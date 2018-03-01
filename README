@@ -1,19 +1,28 @@
+﻿Linyi Chen & Ziting Shen
+
 README
 
-Note:
-1. if bg and fg is not followed by any other arguments, then bg or fg an available job if there is any.
+How to compile: type make, and all source codes should compile. 
 
-Not-supported functionality:
-1. consecutive ;s
-2. consecutive |s
-3. multiple redirection
-4. parentheses in cmdline
-5. for piping, all jobs need to be in either foreground or background.
+How to run: Type “./main”, our shell should start.
+
+Known bugs and limitaions: 
+1. Our parser does not parse by “%”, but we support bg, fg and kill multiple jobs. Especially in kill, we if “%” presents before numbers, it is jobid, no “%” means process id. Also for bg and fg, job id can be specified with or without “%”, just like Linux shell.
+2. Does not support consecutive ;s.
+3. Does not support multiple redirection.
+4. Does not support parentheses in cmdline.
+5. For piping, all jobs need to be in either foreground or background, specified by one “&” at the end of cmdline.
 6. bg, fg, kill, jobs, exit and history cannot be executed in background.
 
 Extra features:
 1. tab completion
 2. history
-3.  a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the 
-       joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
+3. 
+	a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
 	b. Also, will print out "bg: sleep: ambiguous job spec" if more than one job starts with the given command string.
+
+File Directory:
+1. main.cpp: this contains the main loop for our shell
+2. joblist.cpp: this file contains our struct joblist, with various methods.
+3. evaluate.cpp
+
