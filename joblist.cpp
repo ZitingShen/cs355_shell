@@ -133,21 +133,23 @@ job_t *joblist_t::find_unique_exec(string exec) {
 }
 
 job_t *joblist_t::find_stopped() {
+	job_t *result = NULL;
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		if(it->status == ST) {
-			return &(*it);
+			result = &(*it);
 		}
 	}
-	return NULL;
+	return result;
 }
 
 job_t *joblist_t::find_stopped_or_bg() {
+	job_t *result = NULL;
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		if(it->status == ST || it->status == BG) {
-			return &(*it);
+			result = &(*it);
 		}
 	}
-	return NULL;
+	return result;
 }
 
 pid_t joblist_t::jid2pid(int jid) {

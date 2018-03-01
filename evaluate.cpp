@@ -147,7 +147,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 	pid_t pid;
 	int pipes[2 * num_pipes];
 	vector<string> cur_seg;
-	set<string> built_in_commands = {"fg", "bg", "kill", "exit"};
+	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 
 	/*create pipe for commands between each | */
 	for (int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
@@ -165,25 +165,6 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
 		string cmd = cur_seg[0];
-
-		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
-      		if (cmd.compare("fg") == 0 ){
-      			cerr << "fg: no job control" << endl;
-      			continue;
-      		}
-     		else if (cmd.compare("bg") == 0 ){
-      			cerr << "bg: no job control" << endl;
-      			continue;
-      		}
-      		else if (cmd.compare("kill") == 0 ){
-      			//bool ecex_suc = built_in_exec(cur_seg);
-      			built_in_exec(cur_seg);
-      			continue;
-      		}
-      		else{ //cmd is exit, will ignore
-      			continue;
-      		}
-      	}
 
 		sigprocmask(SIG_BLOCK, &signalSet, NULL);
 
@@ -235,6 +216,21 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				close(pipes[i]);
       		}
 
+
+      		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
+	      		if (cmd.compare("fg") == 0 ){
+	      			cerr << "fg: no job control" << endl;
+	      			return false;
+	      		}
+	     		else if (cmd.compare("bg") == 0 ){
+	      			cerr << "bg: no job control" << endl;
+	      			return false;
+	      		} else {
+	      			built_in_exec(cur_seg);
+	      			return false;
+	      		}
+	      	}
+
       		/*Store arguemtns in c strings.*/
   			char** argvc = new char*[cur_seg.size()+1]; 
   			for(unsigned int i = 0; i < cur_seg.size(); i++){
@@ -253,9 +249,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   				return false;
 			}
 
-      	}
-
-      	else{ //parent process
+      	} else{ //parent process
 			/*update joblist*/
 			joblist.add(pid, bg_fg, *command, cmd);
 
@@ -268,8 +262,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 
 			if (i == 0 && bg_fg == BG){
 				cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
-			}
-			else{
+			} else {
 				tcsetpgrp(shell_terminal, pid); //bring child to foreground
 
 				int status;
