@@ -196,7 +196,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 			cerr << "Pipe: Command : " << cmd << ". Failed to fork child process at process." << getpid() << endl;
 		}
 
-		if (pid != 0){ //in child process
+		if (pid == 0){ //in child process
 			if (setpgid(0, 0) < 0){
 				cerr << "Pipe: Command : " << cmd << ". Failed to set new process group." << endl;
 			}
@@ -212,7 +212,6 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 			signal(SIGQUIT, SIG_DFL);
 
 			if (bg_fg == FG){ 
-				cout << "at foreground"<<endl;
   				tcsetpgrp(shell_terminal, getpid());
   			}
 
@@ -282,6 +281,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 
 				tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 				tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
+
+				cout << "child pid is" << pid <<endl;
 
 				if (WIFSTOPPED(status)){ //store child termio if stopped
 					if (joblist.find_pid(pid)){
