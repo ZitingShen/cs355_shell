@@ -12,24 +12,25 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	//int exit_status = sip->si_status;
 	int exit_code = sip->si_code;
 	pid_t pid = sip->si_pid;
+	job_t *target_job = joblist.find_pid(pid);
 	if (exit_code == CLD_EXITED){
-		if(joblist.find_pid(pid)->status == BG) {
+		if(target_job->status == BG) {
 			//cout << "DNBG" << endl;
-			joblist.find_pid(pid)->status = DNBG;
+			target_job->status = DNBG;
 		}
 		else{
 			//cout << "DNFG" << endl;
-			joblist.find_pid(pid)->status = DNFG;
+			target_job->status = DNFG;
 		}
 	} else if (exit_code == CLD_KILLED) {
 		//cout << "TN" << endl;
-		joblist.find_pid(pid)->status = TN;
+		target_job->status = TN;
 	} else if (exit_code == CLD_STOPPED) {
 		//cout << "ST" << endl;
-		joblist.find_pid(pid)->status = ST;
+		target_job->status = ST;
 		//cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status
 			//) << endl;
-		cout << "[" << joblist.pid2jid(pid) << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_code) << endl;
+		cout << "[" << target_job->jid << "] (" << pid << ")\tStopped\t\t" << target_job->cmdline << endl;
 	}
 	//cout << pid << "\t" << exit_code << endl;
 }
