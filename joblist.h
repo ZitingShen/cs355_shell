@@ -28,13 +28,15 @@ enum job_status {BG, FG, ST, DNFG, DNBG, TN}; //foreground done???!!!
 
 struct job_t {
 	int jid; //job id
-	vector<pid_t> pids;
+	pid_t pid;
 	job_status status;
 	string cmdline;
 	string exec;
+	vector<vector<string>> rest_segs;
+	vector<int> saved_pipes;
 	struct termios ter;
 
-	job_t(int jid, vector<pid_t> pids, job_status status, string cmdline, string exec); /* constructor */
+	job_t(int jid, pid_t pid, job_status status, string cmdline, string exec); /* constructor */
 };
 
 struct joblist_t {

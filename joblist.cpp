@@ -2,9 +2,9 @@
 
 using namespace std;
 
-job_t::job_t(int jid, vector<pid_t> pids, job_status status, string cmdline, string exec) {
+job_t::job_t(int jid, pid_t pid, job_status status, string cmdline, string exec) {
 	this->jid = jid;
-	this->pids = pids;
+	this->pid = pid;
 	this->status = status;
 	this->cmdline = cmdline;
 	this->exec = exec;
@@ -13,9 +13,7 @@ job_t::job_t(int jid, vector<pid_t> pids, job_status status, string cmdline, str
 int joblist_t::add(pid_t pid, job_status status, string cmdline, string exec) {
 	if(pid < 1) return -1;
 
-	vector<pid_t> pids;
-	pids.push_back(pid);
-	jobs.emplace(jobs.end(), next_jid, pids, status, cmdline, exec);
+	jobs.emplace(jobs.end(), next_jid, pid, status, cmdline, exec);
 	next_jid++;
 	return 0;
 }
@@ -45,7 +43,7 @@ int joblist_t::remove_pid(pid_t pid) {
 	if (pid < 1) return -1;
 
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		if (it->pids[0] == pid) {
+		if (it->pid == pid) {
 			remove_helper(it);
 			return 0;
 		}
@@ -59,7 +57,7 @@ void joblist_t::remove_terminated_jobs() {
 	for (list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		switch(it->status) {
 			case DNBG:
-				waitpid(it->pids[0], &status, 0);
+				waitpid(it->pid, &status, 0);
 				#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tDone\t" 
 					<< it->cmdline << endl;
@@ -74,7 +72,7 @@ void joblist_t::remove_terminated_jobs() {
 				it = remove_helper(it);
 				break;
 			case TN:
-				waitpid(it->pids[0], &status, 0);
+				waitpid(it->pid, &status, 0);
 				#if (DEBUG)
 				cout << "[" << it->jid << "] (" << it->pid << ")\tTerminated\t" 
 					<< it->cmdline << endl;
@@ -102,7 +100,7 @@ job_t *joblist_t::find_pid(pid_t pid) {
 	if(pid < 1) return NULL;
 
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		if(find(it->pids.begin(), it->pids.end(), pid) != it->pids.end()) {
+		if(it->pid == pid) {
 			return &(*it);
 		}
 	}
@@ -157,7 +155,7 @@ pid_t joblist_t::jid2pid(int jid) {
 
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
 		if(it->jid == jid) {
-			return it->pids[0];
+			return it->pid;
 		}
 	}
 	return -1;
@@ -167,7 +165,7 @@ int joblist_t::pid2jid(pid_t pid) {
 	if(pid < 1) return -1;
 
 	for(list<job_t>::iterator it = jobs.begin(); it != jobs.end(); ++it) {
-		if(find(it->pids.begin(), it->pids.end(), pid) != it->pids.end()) {
+		if(it->pid == pid) {
 			return it->jid;
 		}
 	}

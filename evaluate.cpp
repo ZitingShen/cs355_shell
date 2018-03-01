@@ -31,9 +31,9 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 	}
 	/* Pipe exists!!*/
 	else{
-		if (first_seg.back().compare("&") == 0){ //check whether background or foreground
+		if (parsed_segments->back().back().compare("&") == 0){ //check whether background or foreground
 			bg_fg = BG;
-			parsed_segments[parsed_segments -> size()].pop_back();
+			(*parsed_segments)[parsed_segments->size()-1].pop_back();
 		}
 		cont = pipe_exec(command, parsed_segments, bg_fg);
 	}
@@ -143,17 +143,23 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 }
 
 
-bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg) {
+bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg, vector<int> *saved_pipes) {
 	unsigned int num_pipes = parsed_segments->size() - 1;
 	pid_t pid;
-	int pipes[2 * num_pipes];
+	int pipes[2*num_pipes];
 	vector<string> cur_seg;
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 
-	/*create pipe for commands between each | */
-	for (unsigned int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
-		if (pipe(&pipes[2 * i]) < 0){
-			cerr << "Pipe :" << " current pipe: " << 2 * i << " failed to initialize"<< endl;
+	if(saved_pipes != NULL) {
+		for (unsigned int i = 0; i < num_pipes; i++){
+			pipes[i] = (*saved_pipes)[i];
+		}
+	} else {
+		/*create pipe for commands between each | */
+		for (unsigned int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
+			if (pipe(&pipes[2*i]) < 0){
+				cerr << "Pipe :" << " current pipe: " << 2 * i << " failed to initialize"<< endl;
+			}
 		}
 	}
 
@@ -252,6 +258,10 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
       	} else{ //parent process
 			/*update joblist*/
 			joblist.add(pid, bg_fg, *command, cmd);
+			vector<vector<string>> rest_segs = *parsed_segments;
+			rest_segs.erase(rest_segs.begin(), rest_segs.begin()+1);
+			job_t *target_job = joblist.find_pid(pid);
+			target_job->rest_segs = rest_segs;
 
 			if (setpgid(pid, pid) < 0){
 				cerr << "Command :" << cmd << pid << ". failed to set new process group"<<endl;
@@ -260,9 +270,11 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 			/*unmask signals*/
 			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
-			if (i == 0 && bg_fg == BG){
+			if (i == parsed_segments->size()-1 && bg_fg == BG){
 				cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
-			} else if (bg_fg == FG) {
+			}
+
+			if (bg_fg == FG || (bg_fg == BG && i != parsed_segments->size()-1)) {
 				tcsetpgrp(shell_terminal, pid); //bring child to foreground
 
 				int status;
@@ -292,6 +304,10 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 					close(pipes[2*i+1]);
 					if(i == parsed_segments->size()-1) close(pipes[2*i]);
 				}
+			} else {
+				close(pipes[2*(i-1)]);
+				close(pipes[2*i]);
+				close(pipes[2*i+1]);
 			}
 		}
 	}
@@ -422,7 +438,7 @@ bool bg(vector<string> argv){
 
     	/*only send sigcont when job is ST*/
 		if (target_job->status == ST){
-			pid_t cur_pid = target_job->pids[0];
+			pid_t cur_pid = target_job->pid;
 
 			if (kill(-cur_pid, SIGCONT) < 0){
 				cerr << "bg: " << argv[i] << ": failed to continue in background!" << endl;
@@ -432,13 +448,16 @@ bool bg(vector<string> argv){
 		}
 		else if (target_job->status != BG){
 			string err_mes = " ";
-			if (target_job->status != TN){
+			if (target_job->status == TN){
 				err_mes = "terminated!";
 			}
-			else if (target_job->status != DNBG || target_job->status != DNFG){
+			else if (target_job->status == DNBG || target_job->status == DNFG){
 				err_mes = "been done!";
 			}
 			cerr << "bg: " << argv[i] << ": job has " << err_mes << endl;
+		}
+		if(target_job->rest_segs.size() > 0) {
+			pipe_exec(&target_job->cmdline, &target_job->rest_segs, BG, &(target_job->saved_pipes));
 		}
 	}
 	return true;
@@ -490,7 +509,7 @@ bool fg(vector<string> argv){
 
 	/* if job is ST or BG */
 	if (target_job->status == ST || target_job->status == BG){
-		pid_t pid = target_job->pids[0];
+		pid_t pid = target_job->pid;
 
 		if (kill (-pid, SIGCONT) < 0){
 			cerr << "fg: " << argv[1] << ": failed to continue when trying to be in foreground" << endl;
@@ -527,16 +546,20 @@ bool fg(vector<string> argv){
 		if (tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes) != 0){ // restore shell termio
 			cerr << "fg: " << argv[1] <<": failed to restore shell termio setting" << endl;
 			return false;
-		} 
+		}
+
+		if(target_job->rest_segs.size() > 0) {
+			pipe_exec(&target_job->cmdline, &target_job->rest_segs, FG, &(target_job->saved_pipes));
+		}
 	}
 
 	/* if job is not ST or BG, cerr */
 	else{
 		string err_mes = " ";
-		if (target_job->status != TN){
+		if (target_job->status == TN){
 			err_mes = "terminated!";
 		}
-		else if (target_job->status != DNBG || target_job->status != DNFG){
+		else if (target_job->status == DNBG || target_job->status == DNFG){
 			err_mes = "been done!";
 		}
 		cerr << "fg: " << argv[1] << ": job has " << err_mes << "." << endl;
