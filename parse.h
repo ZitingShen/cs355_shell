@@ -9,7 +9,7 @@
 using namespace std;
 
 int separate_by_semicolon(char *cmdline, vector<string> *result);
-int separate_by_vertical_bar(string *command, vector<string> *result);
+int separate_by_vertical_bar(string command, vector<string> *result);
 vector<vector<string>> parse_segments(vector<string> *segments);
 
 #endif
