@@ -32,9 +32,9 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 	/* Pipe exists!!*/
 	else{
 		if (first_seg.back().compare("&") == 0){ //check whether background or foreground
-				bg_fg = BG;
-				parsed_segments[parsed_segments -> size()].pop_back();
-			}
+			bg_fg = BG;
+			parsed_segments[parsed_segments -> size()].pop_back();
+		}
 		cont = pipe_exec(command, parsed_segments, bg_fg);
 	}
 	return cont;
@@ -143,7 +143,7 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 
 bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg) {
-	int num_pipes = parsed_segments -> size() - 1;
+	int num_pipes = parsed_segments->size() - 1;
 	pid_t pid;
 	int pipes[2 * num_pipes];
 	vector<string> cur_seg;
@@ -160,7 +160,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   	sigemptyset(&signalSet);
   	sigaddset(&signalSet, SIGCHLD);
 
-	for(int i = 0; i < parsed_segments -> size(); i++) {
+	for(int i = 0; i < parsed_segments->size(); i++) {
 
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
@@ -196,18 +196,17 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 
   			/* If not first command, points fd of stdin to left end of pipe. */
   			if (i != 0){
-  				if (dup2(pipes[(i-1) * 2], STDIN_FILENO)){
-  					cout << "Command :" << cmd << ". Left pipe initialization error" << endl;
-  					cerr << endl;
-  					return true;
+  				if (dup2(pipes[(i-1) * 2], STDIN_FILENO) < 0){
+  					cerr << "Command :" << cmd << ". Left pipe initialization error" << endl;
+  					return false;
   				}
   			}
 
   			/* If not last command, points fd of stdout to right end of pipe. */
       		if (i != num_pipes) {
 				if (dup2(pipes[i * 2 + 1], STDOUT_FILENO) < 0) {
-	  				cout << "Command :" << cmd << ". Right pipe initialization error" << endl;
-	  				return true;
+	  				cerr << "Command :" << cmd << ". Right pipe initialization error" << endl;
+	  				return false;
 				}	
       		}
 
@@ -248,7 +247,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   				delete[] argvc;
   				return false;
 			}
-
+			return false;
       	} else{ //parent process
 			/*update joblist*/
 			joblist.add(pid, bg_fg, *command, cmd);
@@ -262,7 +261,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 
 			if (i == 0 && bg_fg == BG){
 				cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
-			} else {
+			} else if (bg_fg == FG) {
 				tcsetpgrp(shell_terminal, pid); //bring child to foreground
 
 				int status;
@@ -271,9 +270,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 				tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
-
 				if (WIFSTOPPED(status)){ //store child termio if stopped
-					if (joblist.find_pid(pid)){
+					if (joblist.find_pid(pid)) {
 						if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
 							cerr << "Pipe: Command :" << cmd<< "termios of stopped job not saved" << endl; 
 						}
@@ -281,14 +279,15 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 					else {
 						cerr << "Pipe: Command :" << cmd << ". " << pid << " not found in the joblist" << endl;
 					}
+				} else if (i != parsed_segments->size()-1 && WIFEXITED(status)) {
+					joblist.remove_pid(pid);
+					if(i != 0) close(pipes[2*(i-1)]);
+					close(pipes[2*i+1]);
+					if(i == parsed_segments->size()-1) close(pipes[2*i]);
 				}
 			}
 		}
 	}
-	/* Closes all pipes in the shell process. */
-  	for (int i = 0; i < 2 * num_pipes; ++i) {
-    	close(pipes[i]);
-  	}
 	return true;
 }
 
