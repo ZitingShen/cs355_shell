@@ -264,7 +264,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 			joblist.add(pid, bg_fg, *command, cmd);
 
 			if (setpgid(pid, pid) < 0){
-				cerr << "Command :" << cmd << pid << ": failed to set new group"<<endl;
+				cerr << "Command :" << cmd << pid << ". failed to set new process group"<<endl;
 			}
 
 			/*unmask signals*/
