@@ -160,7 +160,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   	sigemptyset(&signalSet);
   	sigaddset(&signalSet, SIGCHLD);
 
-	for(unsigned int i = 0; i < parsed_segments -> size(); i++) {
+	for(int i = 0; i < parsed_segments -> size(); i++) {
 
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
@@ -282,7 +282,6 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
 				tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
 
-				cout << "child pid is" << pid <<endl;
 
 				if (WIFSTOPPED(status)){ //store child termio if stopped
 					if (joblist.find_pid(pid)){
