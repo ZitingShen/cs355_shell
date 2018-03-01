@@ -31,24 +31,24 @@ int separate_by_semicolon(char *cmdline, vector<string> *result) {
 	return 0;
 }
 
-int separate_by_vertical_bar(string *command, vector<string> *result) {
+int separate_by_vertical_bar(string command, vector<string> *result) {
 	string delimiter = "|";
 
 	size_t pos = 0;
 	string token;
 	
-	while ((pos = command->find(delimiter)) != string::npos) {
-	    token = command->substr(0, pos);
+	while ((pos = command.find(delimiter)) != string::npos) {
+	    token = command.substr(0, pos);
 	    if (token != "") {
 	    	result->push_back(token);
 		} else {
 			cerr << "syntax error near unexpected token `||'" << endl;
 	    	return -1;
 		}
-	    command->erase(0, pos + delimiter.length());
+	    command.erase(0, pos + delimiter.length());
 	}
-	if(*command != "")
-		result->push_back(*command);
+	if(command != "")
+		result->push_back(command);
 	return 0;
 }
 

@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 
       for(string command: commands) {
         vector<string> segments;
-        if (separate_by_vertical_bar(&command, &segments) < 0) {
+        if (separate_by_vertical_bar(command, &segments) < 0) {
           continue;
         }
 
@@ -87,6 +87,9 @@ int main(int argc, char **argv) {
         
         // hand processed segments to evaluate
         cont = evaluate(&command, &parsed_segments);
+        if (cont == false){
+          break;
+        }
       }
     }
   }
