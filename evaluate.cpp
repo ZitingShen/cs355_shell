@@ -35,7 +35,7 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 				bg_fg = BG;
 				parsed_segments[parsed_segments -> size()].pop_back();
 			}
-		cont = pipe_exec( command, parsed_segments, bg_fg);
+		cont = pipe_exec(command, parsed_segments, bg_fg);
 	}
 	return cont;
 }
@@ -165,10 +165,6 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
 		string cmd = cur_seg[0];
-		if (cur_seg.back().compare("&") == 0 && i != (parsed_segments -> size()) - 1 ){ 
-			cerr << " syntax error near unexpected token `|' " << endl;
-			return true;
-		}
 
 		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
       		if (cmd.compare("fg") == 0 ){
