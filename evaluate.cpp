@@ -143,14 +143,14 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 
 
 bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg) {
-	int num_pipes = parsed_segments->size() - 1;
+	unsigned int num_pipes = parsed_segments->size() - 1;
 	pid_t pid;
 	int pipes[2 * num_pipes];
 	vector<string> cur_seg;
 	set<string> built_in_commands = {"fg", "bg", "kill", "jobs", "history", "exit"};
 
 	/*create pipe for commands between each | */
-	for (int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
+	for (unsigned int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
 		if (pipe(&pipes[2 * i]) < 0){
 			cerr << "Pipe :" << " current pipe: " << 2 * i << " failed to initialize"<< endl;
 		}
@@ -160,7 +160,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
   	sigemptyset(&signalSet);
   	sigaddset(&signalSet, SIGCHLD);
 
-	for(int i = 0; i < parsed_segments->size(); i++) {
+	for(unsigned int i = 0; i < parsed_segments->size(); i++) {
 
 		/*Cannot have & before |*/
 		cur_seg = (*parsed_segments)[i];
@@ -211,7 +211,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
       		}
 
       		/*close pipes*/
-      		for (int i = 0; i < 2 * num_pipes; ++i) {
+      		for (unsigned int i = 0; i < 2 * num_pipes; ++i) {
 				close(pipes[i]);
       		}
 
@@ -279,6 +279,12 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 					else {
 						cerr << "Pipe: Command :" << cmd << ". " << pid << " not found in the joblist" << endl;
 					}
+					return true;
+				} else if (WIFSIGNALED(status)) {
+					for (unsigned int i = 0; i < num_pipes; i++){
+						close(pipes[2*i]);
+					}
+					return true;
 				} else if (i != parsed_segments->size()-1 && WIFEXITED(status)) {
 					joblist.remove_pid(pid);
 					if(i != 0) close(pipes[2*(i-1)]);
