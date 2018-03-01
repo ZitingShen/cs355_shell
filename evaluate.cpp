@@ -31,68 +31,11 @@ bool evaluate (string *command, vector<vector<string>> *parsed_segments){
 	}
 	/* Pipe exists!!*/
 	else{
-		pid_t pid;
-		sigset_t signalSet;  
-		sigemptyset(&signalSet);
-		sigaddset(&signalSet, SIGCHLD);
-
-		/* Block SIGCHLD signal while fork(), setpgid and add joblist */  
-		sigprocmask(SIG_BLOCK, &signalSet, NULL);
-		/*fork*/
-		if ((pid = fork()) < 0 ){
-			cerr << "Failed to fork child process at process " << getpid() << endl;
-		}
-
-		if (pid == 0){
-			if (setpgid(0, 0) < 0){
-				cerr << "Failed to set new group" << endl;
+		if (first_seg.back().compare("&") == 0){ //check whether background or foreground
+				bg_fg = BG;
+				parsed_segments[parsed_segments -> size()].pop_back();
 			}
-			
-			/*unmask SIGCHLD*/
-			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
-			signal(SIGCHLD, SIG_DFL);
-			signal(SIGINT, SIG_DFL);
-			signal(SIGTSTP, SIG_DFL);
-			signal(SIGTERM, SIG_DFL);
-			signal(SIGTTIN, SIG_DFL);
-			signal(SIGQUIT, SIG_DFL);
-
-			tcsetpgrp(shell_terminal, getpid());
-
-			signal(SIGTTOU, SIG_DFL);
-
-			cont = pipe_exec(parsed_segments, bg_fg);
-  			return false;
-		} else{ //parent process
-			/*update joblist*/
-			joblist.add(pid, FG, *command, (*parsed_segments)[0][0]);
-
-			if(setpgid(pid, pid) < 0) {
-				cerr << pid << ": failed to set new group"<<endl;
-			}
-		
-			/*unmask signals*/
-			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
-
-			tcsetpgrp(shell_terminal, pid);
-
-			int status;
-			waitpid(pid, &status, WUNTRACED);
-
-			tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
-			tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
-
-			if (WIFSTOPPED(status)){ //store child termio if stopped
-				if (joblist.find_pid(pid)){
-					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
-						cerr << "termios of stopped job not saved" << endl; 
-					}
-				} else {
-					cerr << pid << " not found in the joblist" << endl;
-				}
-			}
-		}
+		cont = pipe_exec( command, parsed_segments, bg_fg);
 	}
 	return cont;
 }
@@ -117,12 +60,12 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
   	sigprocmask(SIG_BLOCK, &signalSet, NULL);
   	/*fork*/
   	if ((pid = fork()) < 0 ){
-		cerr << "Failed to fork child process at process " << getpid() << endl;
+		cerr << "Command :" << argv[0] << "Failed to fork child process at process " << getpid() << endl;
 	}
 
 	if (pid == 0){
 		if (setpgid(0, 0) < 0){
-			cerr << "Failed to set new group" << endl;
+			cerr << "Command :" << argv[0] << "Failed to set new process group" << endl;
 		}
 
 		/*unmask SIGCHLD*/
@@ -174,13 +117,20 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 			if (WIFSTOPPED(status)){ //store child termio if stopped
 				if (joblist.find_pid(pid)){
 					if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
-						cerr << "termios of stopped job not saved" << endl; 
+						cerr << "Command :" << argv[0] << "termios of stopped job not saved" << endl; 
 					}
-				} else {
-					cerr << pid << " not found in the joblist" << endl;
+				} 
+				else {
+					cerr << "Command :" << argv[0] << ". "<< pid << " not found in the joblist" << endl;
 				}
 				
 			}
+		}
+		else{
+			if (joblist.pid2jid(pid)<0){
+				cerr << "Command :" << argv[0] << ". " << pid << " not found in the joblist" << endl;
+			}
+			cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
 		}
 	}
 
@@ -189,6 +139,168 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
   	}
   	delete[] argvc;
   	return true;
+}
+
+
+bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg) {
+	int num_pipes = parsed_segments -> size() - 1;
+	pid_t pid;
+	int pipes[2 * num_pipes];
+	vector<string> cur_seg;
+	set<string> built_in_commands = {"fg", "bg", "kill", "exit"};
+
+	/*create pipe for commands between each | */
+	for (int i = 0; i < num_pipes; i++){ //why do not need to initialize right end pipes???
+		if (pipe(&pipes[2 * i]) < 0){
+			cerr << "Pipe :" << " current pipe: " << 2 * i << " failed to initialize"<< endl;
+		}
+	}
+
+	sigset_t signalSet;  
+  	sigemptyset(&signalSet);
+  	sigaddset(&signalSet, SIGCHLD);
+
+	for(unsigned int i = 0; i < parsed_segments -> size(); i++) {
+
+		/*Cannot have & before |*/
+		cur_seg = (*parsed_segments)[i];
+		string cmd = cur_seg[0];
+		if (cur_seg.back().compare("&") == 0 && i != (parsed_segments -> size()) - 1 ){ 
+			cerr << " syntax error near unexpected token `|' " << endl;
+			return true;
+		}
+
+		if (built_in_commands.find(cmd) != built_in_commands.end()){ //if first argument is buildin comment
+      		if (cmd.compare("fg") == 0 ){
+      			cerr << "fg: no job control" << endl;
+      			continue;
+      		}
+     		else if (cmd.compare("bg") == 0 ){
+      			cerr << "bg: no job control" << endl;
+      			continue;
+      		}
+      		else if (cmd.compare("kill") == 0 ){
+      			//bool ecex_suc = built_in_exec(cur_seg);
+      			built_in_exec(cur_seg);
+      			continue;
+      		}
+      		else{ //cmd is exit, will ignore
+      			continue;
+      		}
+      	}
+
+		sigprocmask(SIG_BLOCK, &signalSet, NULL);
+
+		/*fork a child*/
+		if ((pid = fork()) < 0 ){
+			cerr << "Pipe: Command : " << cmd << ". Failed to fork child process at process." << getpid() << endl;
+		}
+
+		if (pid != 0){ //in child process
+			if (setpgid(0, 0) < 0){
+				cerr << "Pipe: Command : " << cmd << ". Failed to set new process group." << endl;
+			}
+
+			/*unmask SIGCHLD*/
+			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+		
+			signal(SIGCHLD, SIG_DFL);
+			signal(SIGINT, SIG_DFL);
+			signal(SIGTSTP, SIG_DFL);
+			signal(SIGTERM, SIG_DFL);
+			signal(SIGTTIN, SIG_DFL);
+			signal(SIGQUIT, SIG_DFL);
+
+			if (bg_fg == FG){ 
+				cout << "at foreground"<<endl;
+  				tcsetpgrp(shell_terminal, getpid());
+  			}
+
+  			signal(SIGTTOU, SIG_DFL);
+
+  			/* If not first command, points fd of stdin to left end of pipe. */
+  			if (i != 0){
+  				if (dup2(pipes[(i-1) * 2], STDIN_FILENO)){
+  					cout << "Command :" << cmd << ". Left pipe initialization error" << endl;
+  					cerr << endl;
+  					return true;
+  				}
+  			}
+
+  			/* If not last command, points fd of stdout to right end of pipe. */
+      		if (i != num_pipes) {
+				if (dup2(pipes[i * 2 + 1], STDOUT_FILENO) < 0) {
+	  				cout << "Command :" << cmd << ". Right pipe initialization error" << endl;
+	  				return true;
+				}	
+      		}
+
+      		/*close pipes*/
+      		for (int i = 0; i < 2 * num_pipes; ++i) {
+				close(pipes[i]);
+      		}
+
+      		/*Store arguemtns in c strings.*/
+  			char** argvc = new char*[cur_seg.size()+1]; 
+  			for(unsigned int i = 0; i < cur_seg.size(); i++){
+    			char* temp = new char[cur_seg[i].size()+1];
+    			strcpy(temp, cur_seg[i].c_str());
+    			argvc[i] = temp;
+  			}
+  			argvc[cur_seg.size()] = NULL;
+
+  			if (execvp(argvc[0], argvc) < 0){
+				handle_error(cmd);
+				for(unsigned int i = 0; i < cur_seg.size()+1; i++) {
+    				delete[] argvc[i];
+  				}
+  				delete[] argvc;
+  				return false;
+			}
+
+      	}
+
+      	else{ //parent process
+			/*update joblist*/
+			joblist.add(pid, bg_fg, *command, cmd);
+
+			if (setpgid(pid, pid) < 0){
+				cerr << "Command :" << cmd << pid << ": failed to set new group"<<endl;
+			}
+
+			/*unmask signals*/
+			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+			if (i == 0 && bg_fg == BG){
+				cout << '[' << joblist.pid2jid(pid) << "]\t" << pid << '\t' << *command << endl;
+			}
+			else{
+				tcsetpgrp(shell_terminal, pid); //bring child to foreground
+
+				int status;
+				waitpid(pid, &status, WUNTRACED);
+
+				tcsetattr(shell_terminal, TCSADRAIN, &shell_tmodes); // restore shell termio
+				tcsetpgrp(shell_terminal, shell_pid); //bring shell to fg
+
+				if (WIFSTOPPED(status)){ //store child termio if stopped
+					if (joblist.find_pid(pid)){
+						if (tcgetattr(shell_terminal, &joblist.find_pid(pid)->ter) < 0){
+							cerr << "Pipe: Command :" << cmd<< "termios of stopped job not saved" << endl; 
+						}
+					} 
+					else {
+						cerr << "Pipe: Command :" << cmd << ". " << pid << " not found in the joblist" << endl;
+					}
+				}
+			}
+		}
+	}
+	/* Closes all pipes in the shell process. */
+  	for (int i = 0; i < 2 * num_pipes; ++i) {
+    	close(pipes[i]);
+  	}
+	return true;
 }
 
 bool built_in_exec(vector<string> argv) {
@@ -507,8 +619,3 @@ void handle_error(string exec) {
 	}
 }
 
-bool pipe_exec(vector<vector<string>> *parsed_segments, enum job_status bg_fg) {
-	for(unsigned int i = 0; i < parsed_segments->size(); i++) {
-
-	}
-}

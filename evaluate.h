@@ -11,9 +11,9 @@
 #include <unistd.h>
 #include <iostream>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <readline/history.h>
-
+#include <sys/types.h>
+#include <stdio.h>
 
 #include "joblist.h"
 
@@ -45,10 +45,10 @@ return false if the shell should exit, true otherwise.
 bool evaluate(string *command, vector<vector<string>> *parsed_segments);
 
 // return false if execvp fails, true otherwise.
-bool no_pipe_exec (string *command, vector<string> command_segment, enum job_status bg_fg);
+bool no_pipe_exec (string *command, vector<string> command_segment, job_status bg_fg);
 
 // return false if execvp fails, true otherwise.
-bool pipe_exec (vector<vector<string>> *parsed_segments, enum job_status bg_fg);
+bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_status bg_fg);
 
 bool built_in_exec(vector<string> argv);
 
