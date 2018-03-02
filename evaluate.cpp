@@ -100,6 +100,9 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		if (setpgid(pid, pid) < 0){
 			cerr << pid << ": failed to set new group"<<endl;
 		}
+
+		if(bg_fg == BG)
+			joblist.last_bg = pid;
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -267,6 +270,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				cerr << "Command :" << cmd << pid << ". failed to set new process group"<<endl;
 			}
 
+			if (i == parsed_segments->size()-1 &&bg_fg == BG) 
+				joblist.last_bg = pid;
 			/*unmask signals*/
 			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -401,21 +406,16 @@ bool bg(vector<string> argv){
 	int cur_jid;
 	job_t *target_job;
 	if(argv.size() < 2) {
-		if (joblist.last_ST){ 
-			*target_job = joblist.find_pid(joblist.last_ST);
-			if(!target_job && target_job -> status() == ST){
-				if (kill(-joblist.last_ST, SIGCONT) < 0){
-					cerr << "bg: last stopped job failed to continue in background" << endl;
-					return true;
-				}
-				target_job->status = BG;	
-			}else{
-				cerr << "bg: current: no such job" << endl;
+		if (joblist.last_st){ 
+			target_job = joblist.find_pid(joblist.last_st);
+			if(target_job != NULL && target_job->status == ST){
+				argv.push_back(to_string(target_job->jid));	
 			}
-		}else {
-			cerr << "bg: current: no such job" << endl;
 		}
-		return true;
+		if (argv.size() < 2) {
+			cerr << "bg: current: no such job" << endl;
+			return true;
+		}
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
@@ -456,6 +456,7 @@ bool bg(vector<string> argv){
 				continue;
 			}
 			target_job->status = BG;
+			joblist.last_bg = cur_pid;
 		}
 		else if (target_job->status != BG){
 			string err_mes = " ";
@@ -484,21 +485,24 @@ bool fg(vector<string> argv){
 
 	/*check argv size*/
 	if(argv.size() < 2) {
-		if (joblist.last_BG){  
-			*target_job = joblist.find_pid(joblist.last_BG);
-			if(!target_job && target_job -> status() == BG){
-				if (kill(-joblist.last_BG, SIGCONT) < 0){
-					cerr << "bg: last stopped job failed to continue in background" << endl;
-					return true;
-				}
-				target_job->status = BG;	
-			}else{
-				cerr << "bg: current: no such job" << endl;
-			}
-		}else {
-			cerr << "bg: current: no such job" << endl;
+		if (joblist.last_bg){ 
+			target_job = joblist.find_pid(joblist.last_bg);
+			if(target_job != NULL && target_job->status == BG){
+				argv.push_back(to_string(target_job->jid));	
+			} 
 		}
-		return true;
+
+		if (joblist.last_st) {
+			target_job = joblist.find_pid(joblist.last_st);
+			if(argv.size() < 2 && (target_job != NULL && target_job->status == ST)){
+				argv.push_back(to_string(target_job->jid));	
+			}
+		}
+
+		if (argv.size() < 2) {
+			cerr << "fg: current: no such job" << endl;
+			return true;
+		}
 	}
 
 	try { // convert argument to jid
