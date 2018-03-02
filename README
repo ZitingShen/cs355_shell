@@ -8,7 +8,7 @@ How to run: Type “./main”, our shell should start.
 
 Known bugs and limitaions: 
 1. Our parser does not parse by “%”, but we support bg, fg and kill multiple jobs. Especially in kill, we if “%” presents before numbers, it is jobid, no “%” means process id. Also for bg and fg, job id can be specified with or without “%”, just like Linux shell.
-2. Does not support consecutive ;s.
+2. Does not support consecutive ";"s.
 3. Does not support multiple redirection.
 4. Does not support parentheses in cmdline.
 5. For piping, all jobs need to be in either foreground or background, specified by one “&” at the end of cmdline.
@@ -17,12 +17,15 @@ Known bugs and limitaions:
 Extra features:
 1. tab completion
 2. history
-3. 
-	a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
+3. 	a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the 			joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
 	b. Also, will print out "bg: sleep: ambiguous job spec" if more than one job starts with the given command string.
+4. Piping without redirection
 
 File Directory:
-1. main.cpp: this contains the main loop for our shell
-2. joblist.cpp: this file contains our struct joblist, with various methods.
-3. evaluate.cpp
+1. main.cpp: this contains the main loop for our shell.
+2. joblist.cpp: this file contains our struct, joblist, with various methods.
+3. evaluate.cpp: this file contains function that executes commands, including builtin functions: fg, bg, kill.
+4. parse.cpp: this file contains our parser functions.
+
+
 
