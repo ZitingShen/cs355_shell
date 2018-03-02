@@ -401,13 +401,21 @@ bool bg(vector<string> argv){
 	int cur_jid;
 	job_t *target_job;
 	if(argv.size() < 2) {
-		target_job = joblist.find_stopped();
-		if(!target_job) {
+		if (joblist.last_ST){ 
+			*target_job = joblist.find_pid(joblist.last_ST);
+			if(!target_job && target_job -> status() == ST){
+				if (kill(-joblist.last_ST, SIGCONT) < 0){
+					cerr << "bg: last stopped job failed to continue in background" << endl;
+					return true;
+				}
+				target_job->status = BG;	
+			}else{
+				cerr << "bg: current: no such job" << endl;
+			}
+		}else {
 			cerr << "bg: current: no such job" << endl;
-			return true;
-		} else {
-			argv.push_back(to_string(target_job->jid));
 		}
+		return true;
 	}
 
 	for (unsigned int i = 1; i < argv.size(); i++){
@@ -475,14 +483,22 @@ bool fg(vector<string> argv){
 	job_t *target_job;
 
 	/*check argv size*/
-	if (argv.size() < 2){
-		target_job = joblist.find_stopped_or_bg();
-		if(!target_job) {
-			cerr << "fg: current: no such job" << endl;
-			return true;
-		} else {
-			argv.push_back(to_string(target_job->jid));
+	if(argv.size() < 2) {
+		if (joblist.last_BG){  
+			*target_job = joblist.find_pid(joblist.last_BG);
+			if(!target_job && target_job -> status() == BG){
+				if (kill(-joblist.last_BG, SIGCONT) < 0){
+					cerr << "bg: last stopped job failed to continue in background" << endl;
+					return true;
+				}
+				target_job->status = BG;	
+			}else{
+				cerr << "bg: current: no such job" << endl;
+			}
+		}else {
+			cerr << "bg: current: no such job" << endl;
 		}
+		return true;
 	}
 
 	try { // convert argument to jid

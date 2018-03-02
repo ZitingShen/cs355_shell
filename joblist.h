@@ -42,6 +42,8 @@ struct job_t {
 struct joblist_t {
 	int next_jid = 1;
 	list<job_t> jobs;
+	pid_t last_bg;
+	pid_t last_st;
 
 	// return 0 on success, -1 on failure
 	int add(pid_t pid, job_status status, string cmdline, string exec);
