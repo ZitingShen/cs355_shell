@@ -14,17 +14,19 @@ Known bugs and limitaions:
 3. Does not support parentheses in cmdline.
 4. For piping, all jobs need to be in either foreground or background, specified by one “&” at the end of cmdline.
 5. bg, fg, kill, jobs, exit and history cannot be executed in background.
+6. IMPORTANT: readline has a ton of memory leaks (some definitely lost bytes and a ton of still reachable bytes) and one error if valgrind is run.
 
 Extra features:
-1. tab completion
-2. history
-3. 
-	a. for commands "fg" and "bg", support execution with first argument of command, if only one FG, BG or ST job in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist).
-	b. Also, will print out "bg: sleep: ambiguous job spec" if more than one job starts with the given command string.
-4. piping
+1. Tab completion of the file names in current directory.
+2. History of commands, including using up and down button to scroll the previous commands.
+3. For commands "fg" and "bg", support execution with first argument of command, if only one job has such first argument in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist). If multiple jobs start with the given first arguement, the shell will print out "ambiguous job spec."
+4. Piping without redirection. Only the last segment of the pipe can be run in the background, while all other segments are forced to be run in the foreground. The pipe can be stopped by ctrl-z or terminated by ctrl-c.
 
 File Directory:
-1. main.cpp: this contains the main loop for our shell
-2. joblist.cpp: this file contains our struct joblist, with various methods.
-3. evaluate.cpp
+1. main.cpp: this contains the main loop for our shell.
+2. joblist.cpp: this file contains our struct, joblist, with various methods.
+3. evaluate.cpp: this file contains function that executes commands, including builtin functions: fg, bg, kill.
+4. parse.cpp: this file contains our parser functions.
+
+
 

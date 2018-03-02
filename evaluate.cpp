@@ -264,7 +264,7 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 			target_job->rest_segs = rest_segs;
 
 			if (setpgid(pid, pid) < 0){
-				cerr << "Command :" << cmd << pid << ": failed to set new group"<<endl;
+				cerr << "Command :" << cmd << pid << ". failed to set new process group"<<endl;
 			}
 
 			/*unmask signals*/
@@ -360,7 +360,7 @@ bool kill(vector<string> argv){
 		try {
 			if (argv[i][0] == '%'){ //then this is jobid
 				if (!joblist.find_jid(stoi(argv[i].substr(1)))){
-					cerr << "kill: " << argv[i] << " arguments must be process or job IDs" << endl;
+					cerr << "kill: current: " << argv[i] << " job does not exits" << endl;
 					continue;
 				}
 				cur_pid = joblist.jid2pid(stoi(argv[i].substr(1)));
@@ -368,7 +368,7 @@ bool kill(vector<string> argv){
         	else{ //then is pid
         		cur_pid = stoi(argv[i]);
         		if (!joblist.find_pid(cur_pid)){
-        			cerr << "kill: "  << argv[i] << " arguments must be process or job IDs" << endl;
+        			cerr << "kill: current: "  << argv[i] << " job does not exists" << endl;
         			continue;
         		}
         		
