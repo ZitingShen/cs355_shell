@@ -8,7 +8,33 @@ make
 How to run:
 ./main
 
-Known bugs and limitaions: 
+File Directory:
+1. main.cpp: this contains the main loop for our shell.
+2. joblist.cpp: this file contains our struct, joblist, with various methods.
+3. evaluate.cpp: this file contains function that executes commands, including built-in functions: fg, bg, kill.
+4. parse.cpp: this file contains our parser functions.
+
+Basic structure of our shell
+1. main.cpp: this contains the main loop for our shell. We use readline to read command line input. And then hand the cmd input to our parsers in parse.cpp
+4. parse.cpp: this file contains our parser functions. In addition to parsing according to symbols and white spaces, we first parse according to “;” into different  segments, and then further parse then according to “|”.
+2. joblist.cpp: this file contains our struct, joblist, with various methods. We store job infos in to the global variable joblist. And the joblist contains methods such as lookup by pid, print job lists, etc.
+3. evaluate.cpp: this file contains function that executes commands. We divide our implementation into two cases, with pipe and without pipes. The  without pipe version fork a child to implement one cmd, just like the last hw. The with pipe version is a bit more complicated, and is explained in more details below in the feature section. This file also  includes built-in functions: fg, bg, kill.
+
+A list of features implemented:
+1. kill: fully implemented. We support kill by pid(no preceding “%” ) or jid(precede by “%”). And support killing multiple jobs.
+2. bg: fully implemented. Take jids as arguments. When no jid arguments provided, will simply bg the last stopped job, if there is any. And jid as arguments can be with or without “%”. Support bg multiple jobs. Will continue executing bg even if there are invalid jids in the middle
+3. fg: fully implemented. Take jids as arguments, but will only examine the first jid just as linux shell. And jid as arguments can be with or without “%”.  If no arguments supplied, will bring the last backgrounded job to foreground if any. If no last backgrounded, will bring last stopped job to foreground if there is any.
+4. jobs: Will print out the list of running and stopped jobs along with job ids, pid, and commands.
+5. semicolon: fully implemented. Will execute each command separated by “;” in the order given.
+6. piping: fully implemented. If intermediate command is built-in we do not fork child to execute, if not, we will fork a child to execute and add to joblist. To support ctrl_z in piping, we add one extra data field in out struct job, where we will also store the rest of piping commands to be executed. If  we bg or fg a piping job, will take that remaining piping commands to continue execution. Piping does not support fg/bg and will ignore “exit” just as linux shell, 
+7. exit: fully implemented. 
+8. ctrl-c: fully implemented. Shell will print new prompt when ctrl-x is hit. Child process at foreground will handler ctrl-c as it should be (i.e  being killed).
+9. ctrl-z: fully implemented. Shell will ignore it. Child process at foreground will be suspended upon receival of SIGSTSP.
+
+How we test our shell
+We test our shells with a checklist we wrote up ourselves, which includes testing each feature we implemented and various other cases that could possibly lead to interesting results. In addition to comparing behaviors of our shell against that of Linux shell, we also ran valgrind to check memory leak (readline library has memory leak issue and there are “definitely lost bytes”).
+
+Known bugs and limitations: 
 1. The shell does not support spaces between “%” and numbers, which is consistent with bash's behaviour. We support bg, fg and kill multiple jobs. In kill, if “%” presents before a number, the number is jobid. If no “%” the number is process id. For bg and fg, only job id can be used. Job id can be preceded with or without “%”, just like Linux shell.
 2. The shell does not support consecutive ;s or ; at the beginning of a command.
 3. Does not support parentheses in cmdline.
@@ -19,14 +45,9 @@ Known bugs and limitaions:
 Extra features:
 1. Tab completion of the file names in current directory.
 2. History of commands, including using up and down button to scroll the previous commands.
-3. For commands "fg" and "bg", support execution with first argument of command, if only one job has such first argument in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist). If multiple jobs start with the given first arguement, the shell will print out "ambiguous job spec."
+3. For commands "fg" and "bg", support execution with first argument of command, if only one job has such first argument in the joblist. (e.g. "fg sleep" valid if only one "sleep xx" running/stopped in the joblist). If multiple jobs start with the given first argument, the shell will print out "ambiguous job spec."
 4. Piping without redirection. Only the last segment of the pipe can be run in the background, while all other segments are forced to be run in the foreground. The pipe can be stopped by ctrl-z or terminated by ctrl-c.
 
-File Directory:
-1. main.cpp: this contains the main loop for our shell.
-2. joblist.cpp: this file contains our struct, joblist, with various methods.
-3. evaluate.cpp: this file contains function that executes commands, including builtin functions: fg, bg, kill.
-4. parse.cpp: this file contains our parser functions.
 
 
 
