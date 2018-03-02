@@ -306,8 +306,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				}
 			} else {
 				close(pipes[2*(i-1)]);
-				close(pipes[2*i]);
-				close(pipes[2*i+1]);
+				//close(pipes[2*i+1]);
+				//close(pipes[2*i]);
 			}
 		}
 	}
@@ -381,6 +381,9 @@ bool kill(vector<string> argv){
    		
    		//send signo to pid
    		cur_pid = getpgid(cur_pid);//just to double check pgid
+   		if(joblist.find_pid(cur_pid)->status == ST) {
+   			kill(cur_pid, SIGCONT);
+   		}
 		if (kill(-cur_pid, signo) > 0){
 			cerr << ": job " << "kill: "  << argv[i] << "failed to be killed" << endl;
 		}
