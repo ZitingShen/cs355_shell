@@ -28,6 +28,7 @@ void sigchld_handler(int sig, siginfo_t *sip, void *notused){
 	} else if (exit_code == CLD_STOPPED) {
 		//cout << "ST" << endl;
 		target_job->status = ST;
+		joblist.last_st = pid;
 		//cout << "[" << joblist.pid2jid(pid) << "]" << "] (" << pid << ")\tStopped\t\tSignal " << WSTOPSIG(exit_status
 			//) << endl;
 		cout << "[" << target_job->jid << "] (" << pid << ")\tStopped\t\t" << target_job->cmdline << endl;

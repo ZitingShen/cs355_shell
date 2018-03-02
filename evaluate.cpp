@@ -100,6 +100,9 @@ bool no_pipe_exec (string *command, vector<string> argv, job_status bg_fg){
 		if (setpgid(pid, pid) < 0){
 			cerr << pid << ": failed to set new group"<<endl;
 		}
+
+		if(bg_fg == BG)
+			joblist.last_bg = pid;
 		/*unmask signals*/
 		sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -267,6 +270,8 @@ bool pipe_exec(string *command, vector<vector<string>> *parsed_segments, job_sta
 				cerr << "Command :" << cmd << pid << ". failed to set new process group"<<endl;
 			}
 
+			if (i == parsed_segments->size()-1 &&bg_fg == BG) 
+				joblist.last_bg = pid;
 			/*unmask signals*/
 			sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
 
@@ -401,12 +406,15 @@ bool bg(vector<string> argv){
 	int cur_jid;
 	job_t *target_job;
 	if(argv.size() < 2) {
-		target_job = joblist.find_stopped();
-		if(!target_job) {
+		if (joblist.last_st){ 
+			target_job = joblist.find_pid(joblist.last_st);
+			if(target_job != NULL && target_job->status == ST){
+				argv.push_back(to_string(target_job->jid));	
+			}
+		}
+		if (argv.size() < 2) {
 			cerr << "bg: current: no such job" << endl;
 			return true;
-		} else {
-			argv.push_back(to_string(target_job->jid));
 		}
 	}
 
@@ -448,6 +456,7 @@ bool bg(vector<string> argv){
 				continue;
 			}
 			target_job->status = BG;
+			joblist.last_bg = cur_pid;
 		}
 		else if (target_job->status != BG){
 			string err_mes = " ";
@@ -475,13 +484,24 @@ bool fg(vector<string> argv){
 	job_t *target_job;
 
 	/*check argv size*/
-	if (argv.size() < 2){
-		target_job = joblist.find_stopped_or_bg();
-		if(!target_job) {
+	if(argv.size() < 2) {
+		if (joblist.last_bg){ 
+			target_job = joblist.find_pid(joblist.last_bg);
+			if(target_job != NULL && target_job->status == BG){
+				argv.push_back(to_string(target_job->jid));	
+			} 
+		}
+
+		if (joblist.last_st) {
+			target_job = joblist.find_pid(joblist.last_st);
+			if(argv.size() < 2 && (target_job != NULL && target_job->status == ST)){
+				argv.push_back(to_string(target_job->jid));	
+			}
+		}
+
+		if (argv.size() < 2) {
 			cerr << "fg: current: no such job" << endl;
 			return true;
-		} else {
-			argv.push_back(to_string(target_job->jid));
 		}
 	}
 
